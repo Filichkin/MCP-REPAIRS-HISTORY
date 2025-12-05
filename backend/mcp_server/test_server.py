@@ -4,7 +4,7 @@ from fastmcp import Client
 
 
 MCP_URL = 'http://localhost:8004/sse'
-TEST_VIN = 'Z94C241BBMR221738'
+TEST_VIN = 'XWEG3417BN0009095'
 
 
 async def main():
@@ -24,7 +24,7 @@ async def main():
             'warranty_days',
             arguments={'vin': TEST_VIN}
         )
-        print('📊 Результат:\n', result.content[0].text)
+        print('📊 Результат:\n\n', result.content[0].text)
         print()
 
         # Тест 2: История гарантийных обращений
@@ -35,7 +35,7 @@ async def main():
             'warranty_history',
             arguments={'vin': TEST_VIN}
         )
-        print('🔧 Результат:\n', result.content[0].text)
+        print('🔧 Результат:\n\n', result.content[0].text)
         print()
 
         # Тест 3: История техобслуживания
@@ -46,7 +46,7 @@ async def main():
             'maintenance_history',
             arguments={'vin': TEST_VIN}
         )
-        print('🛠️  Результат:\n', result.content[0].text)
+        print('🛠️  Результат:\n\n', result.content[0].text)
         print()
 
         # Тест 4: История ремонтов DNM
@@ -57,7 +57,7 @@ async def main():
             'vehicle_repairs_history',
             arguments={'vin': TEST_VIN}
         )
-        print('🚗 Результат:\n', result.content[0].text)
+        print('🚗 Результат:\n\n', result.content[0].text)
         print()
 
         print('✅ Все тесты завершены!')

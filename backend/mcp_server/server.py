@@ -93,7 +93,7 @@ async def get_maintenance_history(vin: str) -> list[dict[str, Any]]:
 
 async def get_vehicle_repairs_history(vin: str) -> list[dict[str, Any]]:
     '''Получить историю ремонтов из дилерской сети (DNM records).'''
-    url = f'{settings.api_url}/api/vehicle/{vin}'
+    url = f'{settings.api_url}/api/dnm/{vin}'
     headers = {'Authorization': f'Bearer {settings.api_key}'}
 
     async with httpx.AsyncClient(timeout=30.0) as client:
@@ -102,12 +102,14 @@ async def get_vehicle_repairs_history(vin: str) -> list[dict[str, Any]]:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as e:
-            logger.error(f'HTTP error {e.response.status_code}: {e}')
             if e.response.status_code == 404:
-                return [{'error': f'VIN {vin} не найден'}]
+                logger.info(f'VIN {vin} не найден в DNM records')
+                return []
             elif e.response.status_code == 401:
+                logger.error('Ошибка аутентификации API')
                 return [{'error': 'Ошибка аутентификации'}]
             else:
+                logger.error(f'HTTP error {e.response.status_code}: {e}')
                 return [{'error': f'HTTP ошибка: {e.response.status_code}'}]
         except httpx.TimeoutException:
             logger.error(f'Timeout при запросе к {url}')
@@ -178,28 +180,39 @@ async def warranty_history(vin: str) -> str:
         odometr = record['odometr']
         dealer_name = record['dealer']['name']
         dealer_city = record['dealer']['city']
+        casual_part = record['casual_part']
         casual_part_descr = record['casual_part_descr']
 
-        replaced_parts = [
-            p['replace_part_descr']
-            for p in record.get('replaced_parts', [])
+        replaced_parts_descriptions = [
+            f'Каталожный номер: {part["replace_part"]}, '
+            f'Название: {part["replace_part_descr"]}\n'
+            for part in record.get('replaced_parts', [])
         ]
         replaced_parts_str = (
-            ', '.join(replaced_parts) if replaced_parts else 'нет'
+            '; '.join(replaced_parts_descriptions)
+            if replaced_parts_descriptions else 'нет'
         )
 
-        op_codes = [
-            op['op_code_descr']
+        op_codes_descriptions = [
+            f'Код операции: {op["op_code"]}, '
+            f'Описание работы: {op["op_code_descr"]}\n'
             for op in record.get('op_codes', [])
         ]
-        op_codes_str = ', '.join(op_codes) if op_codes else 'нет'
+        op_codes_str = (
+            '; '.join(op_codes_descriptions)
+            if op_codes_descriptions else 'нет'
+        )
 
         desc = (
-            f'Гарантийное обращение №{serial} от {ro_open_date} '
+            f'Гарантийное требование {serial} от {ro_open_date} '
             f'(пробег {odometr} км) у дилера {dealer_name} '
-            f'({dealer_city}). Причинная деталь: {casual_part_descr}. '
-            f'Заменённые детали: {replaced_parts_str}. '
-            f'Выполненные работы: {op_codes_str}'
+            f'({dealer_city}).\n\n'
+            f'Деталь-виновник: {casual_part}. \n'
+            f'Описание детали-виновника: {casual_part_descr}. \n\n'
+            f'Заменённые детали: \n'
+            f'{replaced_parts_str}. \n\n'
+            f'Выполненные работы: \n'
+            f'{op_codes_str}'
         )
         descriptions.append(desc)
 
@@ -275,8 +288,10 @@ async def vehicle_repairs_history(vin: str) -> str:
 
         desc = (
             f'Посещение {dealer_name} {ro_close_date} '
-            f'(пробег {odometer} км). Тип ремонта: {repair_type}. '
-            f'Причина визита: {visit_reason}. '
+            f'(пробег {odometer} км).\n\n'
+            f'Тип ремонта: {repair_type}.\n\n'
+            f'Причина визита: {visit_reason}.\n\n'
+            f'Рекомендации: {recomendations}.\n\n'
             f'Рекомендации: {recomendations}'
         )
         descriptions.append(desc)
