@@ -5,6 +5,7 @@ from fastmcp import Client
 
 MCP_URL = 'http://localhost:8004/sse'
 TEST_VIN = 'XWEG3417BN0009095'
+TEST_QUERY = 'Что делать в случае повторного ремонта?'
 
 
 async def main():
@@ -58,6 +59,17 @@ async def main():
             arguments={'vin': TEST_VIN}
         )
         print('🚗 Результат:\n\n', result.content[0].text)
+        print()
+
+        # Тест 5: RAG - поиск в базе знаний
+        print('=' * 60)
+        print('5️⃣  Тестируем compliance_rag')
+        print('=' * 60)
+        result = await client.call_tool(
+            'compliance_rag',
+            arguments={'query': TEST_QUERY}
+        )
+        print('📚 Результат:\n\n', result.content[0].text)
         print()
 
         print('✅ Все тесты завершены!')
