@@ -1,15 +1,59 @@
 [project]
 name = "backend"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
+description = "MCP Server and Multi-agent warranty claims analysis system using LangGraph and GigaChat"
 requires-python = ">=3.12"
 dependencies = [
+    # MCP Server dependencies
     "fastmcp>=2.13.3",
+    "mcp>=1.3.2",
+    "starlette>=0.41.3",
+
+    # Agent System dependencies
+    "langchain>=0.1.0",
+    "langchain-community>=0.1.0",
+    "langgraph>=0.0.40",
+    "langchain-gigachat>=0.1.0",
+
+    # Common dependencies
     "httpx>=0.27.0",
     "loguru>=0.7.3",
+    "pydantic>=2.5.0",
     "pydantic-settings>=2.7.1",
-    "mcp>=1.3.2",
-    "uvicorn>=0.34.0",
-    "starlette>=0.41.3",
+    "uvicorn[standard]>=0.34.0",
+    "fastapi>=0.109.0",
+    "python-dotenv>=1.0.0",
+    "aiohttp>=3.9.0",
+    "tenacity>=8.2.3",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.23.0",
+    "black>=24.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.8.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["mcp_server", "agent", "config.py"]
+
+[tool.black]
+line-length = 88
+target-version = ['py312']
+include = '\.pyi?$'
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
