@@ -12,7 +12,7 @@ from loguru import logger
 
 from backend.config import settings
 from backend.agent.graph import execute_query
-from backend.agent.tools.mcp_client import get_mcp_client, close_mcp_client
+from backend.agent.tools.mcp_client import close_mcp_client
 
 
 def setup_logging() -> None:

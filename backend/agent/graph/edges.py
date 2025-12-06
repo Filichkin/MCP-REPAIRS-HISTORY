@@ -62,7 +62,9 @@ def route_after_classifier(
 
     # If multiple agents needed, use sequential execution
     # Priority: repair_days -> compliance -> dealer_insights
-    logger.info(f'Требуется {agents_needed} агентов, последовательное выполнение')
+    logger.info(
+        f'Требуется {agents_needed} агентов, последовательное выполнение'
+        )
 
     if state.classification.needs_repair_days:
         return GraphNodes.REPAIR_DAYS
