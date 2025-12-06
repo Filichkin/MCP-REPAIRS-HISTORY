@@ -44,14 +44,14 @@ async def classifier_node(state: AgentState) -> AgentState:
         )
 
         # Invoke LLM
-        logger.debug(
+        logger.info(
             f'Вызов классификатора LLM для запроса: '
             f'{state.query[:100]}'
             )
         response = await llm.ainvoke(messages)
         response_text = response.content
 
-        logger.debug(f'Классификатор ответ: {response_text}')
+        logger.debug(f'Классификатор RAW ответ: {response_text}')
 
         # Parse JSON response
         classification_data = _parse_classification_response(response_text)
@@ -81,7 +81,7 @@ async def classifier_node(state: AgentState) -> AgentState:
 
     except Exception as e:
         error_msg = f'Ошибка классификации: {str(e)}'
-        logger.error(error_msg)
+        logger.error(error_msg, exc_info=True)
         state.add_error(error_msg)
 
         # Fallback: create default classification
@@ -111,14 +111,25 @@ def _parse_classification_response(response: str) -> dict:
     '''
     # Try to extract JSON from response
     try:
-        # Look for JSON block
-        json_match = re.search(r'\{[^}]+\}', response, re.DOTALL)
+        # Очищаем ответ от markdown форматирования
+        cleaned = response.strip()
+        if cleaned.startswith('```json'):
+            cleaned = cleaned[7:]
+        if cleaned.startswith('```'):
+            cleaned = cleaned[3:]
+        if cleaned.endswith('```'):
+            cleaned = cleaned[:-3]
+        cleaned = cleaned.strip()
+
+        # Look for JSON block with multiline support
+        json_match = re.search(r'\{.*?\}', cleaned, re.DOTALL)
         if json_match:
             json_str = json_match.group(0)
+            # Пробуем парсить
             data = json.loads(json_str)
         else:
             # Try parsing entire response as JSON
-            data = json.loads(response)
+            data = json.loads(cleaned)
 
         # Validate required fields
         return {
@@ -133,6 +144,7 @@ def _parse_classification_response(response: str) -> dict:
 
     except (json.JSONDecodeError, KeyError, ValueError) as e:
         logger.warning(f'Не удалось парсить JSON классификации: {e}')
+        logger.debug(f'Raw response для fallback: {response}')
 
         # Fallback: try to infer from text
         response_lower = response.lower()
@@ -140,15 +152,15 @@ def _parse_classification_response(response: str) -> dict:
         return {
             'needs_repair_days': any(
                 keyword in response_lower
-                for keyword in ['дней', 'простой', 'лимит', '30']
+                for keyword in ['дней', 'простой', 'лимит', '30', 'repair_days']
             ),
             'needs_compliance': any(
                 keyword in response_lower
-                for keyword in ['закон', 'право', 'гарантия', 'политика']
+                for keyword in ['закон', 'право', 'гарантия', 'политика', 'compliance']
             ),
             'needs_dealer_insights': any(
                 keyword in response_lower
-                for keyword in ['история', 'ремонт', 'проблем', 'паттерн']
+                for keyword in ['история', 'ремонт', 'проблем', 'паттерн', 'dealer']
             ),
             'vin': _extract_vin_from_text(response),
             'reasoning': 'Классификация на основе ключевых слов',

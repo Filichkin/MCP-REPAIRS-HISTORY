@@ -192,12 +192,15 @@ async def execute_query(
 
     # Выполняем граф
     try:
-        final_state = await graph.ainvoke(initial_state)
+        final_state_dict = await graph.ainvoke(initial_state.model_dump())
         logger.info('Выполнение запроса завершено успешно')
+
+        # Преобразуем dict обратно в AgentState
+        final_state = AgentState(**final_state_dict)
         return final_state
 
     except Exception as e:
-        logger.error(f'Ошибка выполнения графа: {e}')
+        logger.error(f'Ошибка выполнения графа: {e}', exc_info=True)
         # Update state with error
         initial_state.add_error(f'Graph execution failed: {str(e)}')
         initial_state.final_response = (

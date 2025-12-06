@@ -5,6 +5,7 @@
 '''
 
 from typing import Literal
+from langgraph.graph import END
 from loguru import logger
 
 from backend.agent.graph.state import AgentState
@@ -125,7 +126,7 @@ def should_continue_to_report(
     return GraphNodes.REPORT_SUMMARY
 
 
-def route_to_end(state: AgentState) -> Literal['END']:
+def route_to_end(state: AgentState):
     '''
     Финальная маршрутизация к END после агрегатора.
 
@@ -136,4 +137,4 @@ def route_to_end(state: AgentState) -> Literal['END']:
         END marker
     '''
     logger.info('Routing to END')
-    return 'END'
+    return END

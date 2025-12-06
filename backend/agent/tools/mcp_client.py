@@ -5,10 +5,16 @@ MCP (Model Context Protocol) клиент для сервиса гарантий
 который предоставляет инструменты и данные для работы с гарантийными вопросами.
 '''
 
+from __future__ import annotations
+
+import asyncio
+from contextlib import AsyncExitStack
 from typing import Any, Optional
 from datetime import datetime, timedelta
 
 import httpx
+from mcp import ClientSession
+from mcp.client.sse import sse_client
 from loguru import logger
 from tenacity import (
     retry,
@@ -81,8 +87,9 @@ class MCPClient:
         self._cache: dict[str, tuple[Any, datetime]] = {}
         self._cache_ttl = timedelta(seconds=settings.mcp_cache_ttl)
 
-        # HTTP client
-        self._client: Optional[httpx.AsyncClient] = None
+        # MCP SSE client
+        self._stack: Optional[AsyncExitStack] = None
+        self._session: Optional[ClientSession] = None
 
         logger.info(f'MCP клиент инициализирован с base_url={self.base_url}')
 
@@ -102,20 +109,37 @@ class MCPClient:
 
     async def connect(self) -> None:
         '''Установление соединения с MCP сервером.'''
-        if self._client is None:
-            self._client = httpx.AsyncClient(
-                base_url=self.base_url,
-                timeout=self.timeout,
-                follow_redirects=True,
+        if self._session is None:
+            stack = AsyncExitStack()
+            # Open SSE streams
+            read_stream, write_stream = (
+                await stack.enter_async_context(sse_client(url=self.base_url))
             )
-            logger.debug('MCP HTTP клиент создан')
+            # Open MCP session
+            session = (
+                await stack.enter_async_context(
+                    ClientSession(read_stream, write_stream)
+                )
+            )
+            await session.initialize()
+            self._stack = stack
+            self._session = session
+            logger.debug('MCP SSE клиент создан и инициализирован')
 
     async def close(self) -> None:
         '''Закрытие соединения с MCP сервером.'''
-        if self._client is not None:
-            await self._client.aclose()
-            self._client = None
-            logger.debug('MCP HTTP клиент закрыт')
+        if self._stack is not None:
+            try:
+                await self._stack.aclose()
+            except (asyncio.CancelledError, GeneratorExit):
+                pass
+            except RuntimeError as e:
+                if 'exit cancel scope in a different task' not in str(e).lower():
+                    raise
+            finally:
+                self._stack = None
+                self._session = None
+                logger.debug('MCP SSE клиент закрыт')
 
     def _get_cache_key(self, tool_name: str, **kwargs: Any) -> str:
         '''Генерация ключа кэша из названия инструмента и аргументов.'''
@@ -151,19 +175,11 @@ class MCPClient:
         self._cache.clear()
         logger.info('Кэш очищен')
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        retry=retry_if_exception_type(
-            (httpx.TimeoutException, httpx.NetworkError)
-            ),
-        reraise=True,
-    )
     async def _call_tool(
         self, tool_name: str, **kwargs: Any
     ) -> dict[str, Any]:
         '''
-        Вызов MCP инструмента с логикой повторных попыток.
+        Вызов MCP инструмента через SSE.
 
         Args:
             tool_name: Название инструмента для вызова
@@ -175,58 +191,50 @@ class MCPClient:
         Raises:
             MCPConnectionError: Если соединение не установлено
             MCPToolNotFoundError: Если инструмент не найден
-            MCPValidationError: Если валидация не прошла
+            MCPClientError: При других ошибках
         '''
-        if self._client is None:
+        if self._session is None:
             await self.connect()
 
-        assert self._client is not None
+        assert self._session is not None
 
         try:
-            # MCP server endpoint format: /tools/{tool_name}
-            endpoint = f'/tools/{tool_name}'
-
             logger.debug(
                 f'Вызов MCP инструмента: {tool_name} с аргументами: '
                 f'{kwargs}'
             )
 
-            response = await self._client.post(
-                endpoint,
-                json=kwargs,
-                timeout=self.timeout,
+            # Вызываем инструмент через MCP session
+            result = await self._session.call_tool(
+                name=tool_name,
+                arguments=kwargs
             )
 
-            response.raise_for_status()
-            data = response.json()
+            # Извлекаем текстовое содержимое из ответа
+            blocks = getattr(result, 'content', [])
+            texts: list[str] = []
+            for block in blocks:
+                text = getattr(block, 'text', None)
+                if text:
+                    texts.append(text)
+
+            response_text = '\n'.join(texts).strip()
 
             logger.debug(f'MCP инструмент {tool_name} ответил')
-            return data
 
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 404:
+            # Возвращаем как словарь с текстом
+            return {'result': response_text}
+
+        except Exception as e:
+            error_msg = str(e).lower()
+            if 'not found' in error_msg or 'unknown tool' in error_msg:
                 raise MCPToolNotFoundError(
                     f'Инструмент не найден: {tool_name}'
                 ) from e
-            elif e.response.status_code == 422:
-                raise MCPValidationError(
-                    f'Ошибка валидации для инструмента {tool_name}: '
-                    f'{e.response.text}'
-                ) from e
             else:
-                raise MCPConnectionError(
-                    f'HTTP ошибка при вызове инструмента {tool_name}: {e}'
+                raise MCPClientError(
+                    f'Ошибка при вызове инструмента {tool_name}: {e}'
                 ) from e
-
-        except (httpx.TimeoutException, httpx.NetworkError) as e:
-            raise MCPConnectionError(
-                f'Ошибка соединения при вызове инструмента {tool_name}: {e}'
-            ) from e
-
-        except Exception as e:
-            raise MCPClientError(
-                f'Неожиданная ошибка при вызове инструмента {tool_name}: {e}'
-            ) from e
 
     async def warranty_days(self, vin: str) -> dict[str, Any]:
         '''
@@ -335,17 +343,28 @@ class MCPClient:
         Returns:
             Словарь с результатом проверки здоровья MCP сервера
         '''
-        if self._client is None:
-            await self.connect()
-
-        assert self._client is not None
-
+        logger.info(f'Health check для MCP сервера: {self.base_url}')
         try:
-            response = await self._client.get('/health')
-            response.raise_for_status()
-            return response.json()
+            # Пробуем подключиться и получить список инструментов
+            if self._session is None:
+                await self.connect()
+
+            assert self._session is not None
+
+            # Список инструментов - простой способ проверить что сервер работает
+            tools_response = await self._session.list_tools()
+            tool_names = [t.name for t in tools_response.tools]
+
+            logger.info(
+                f'MCP сервер healthy - доступно {len(tool_names)} инструментов'
+            )
+            return {'status': 'healthy', 'tools_count': len(tool_names)}
+
+        except asyncio.TimeoutError as e:
+            logger.warning(f'Таймаут при проверке здоровья MCP сервера: {e}')
+            return {'status': 'timeout', 'error': 'Connection timeout'}
         except Exception as e:
-            logger.error(f'Проверка здоровья MCP сервера failed: {e}')
+            logger.error(f'Проверка здоровья MCP сервера failed: {e}', exc_info=True)
             return {'status': 'unhealthy', 'error': str(e)}
 
 

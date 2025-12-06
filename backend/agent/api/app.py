@@ -185,9 +185,10 @@ async def execute_agent_query(request: QueryRequest) -> QueryResponse:
             end_time=final_state.end_time,
         )
 
+        exec_time = response.execution_time_seconds
         logger.info(
             f'Запрос выполнен. Success: {response.success}, '
-            f'Время: {response.execution_time_seconds:.2f}s'
+            f'Время: {exec_time:.2f}s' if exec_time else 'Время: N/A'
         )
 
         return response

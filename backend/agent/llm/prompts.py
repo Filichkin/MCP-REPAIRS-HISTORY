@@ -26,13 +26,13 @@ CLASSIFIER_SYSTEM_PROMPT = '''Ты - классификатор запросов
 - Если в запросе есть VIN - обязательно извлеки его
 
 Ответ СТРОГО в JSON формате:
-{
+{{
     "needs_repair_days": true/false,
     "needs_compliance": true/false,
     "needs_dealer_insights": true/false,
     "vin": "VIN или null",
     "reasoning": "краткое объяснение решения"
-}'''
+}}'''
 
 CLASSIFIER_USER_TEMPLATE = '''Запрос пользователя: {query}
 
