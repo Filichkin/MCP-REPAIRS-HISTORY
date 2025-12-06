@@ -1,8 +1,9 @@
 '''
-Output formatting utilities for agent responses.
+Форматирование выходных данных для ответов агента.
 
-This module provides functions for formatting agent outputs in various formats
-suitable for different audiences (technical, user-friendly, etc.).
+Этот модуль предоставляет функции для форматирования выходных данных для
+ответов агента в различных форматах, подходящих для разных аудиторий
+(технических, пользовательских и т.д.).
 '''
 
 from typing import Any
@@ -12,13 +13,13 @@ import json
 
 def format_date(dt: datetime | date | str | None) -> str:
     '''
-    Format date in Russian locale style.
+    Форматирование даты в русском стиле.
 
     Args:
-        dt: Date/datetime object or ISO string
+        dt: Объект даты/datetime или ISO строка
 
     Returns:
-        Formatted date string (DD.MM.YYYY)
+        Форматированная дата строка (DD.MM.YYYY)
     '''
     if dt is None:
         return 'Не указано'
@@ -37,11 +38,11 @@ def format_date(dt: datetime | date | str | None) -> str:
 
 def format_currency(amount: float | int | None, currency: str = 'RUB') -> str:
     '''
-    Format currency amount.
+    Форматирование суммы валюты.
 
     Args:
-        amount: Amount to format
-        currency: Currency code (default: RUB)
+        amount: Сумма для форматирования
+        currency: Код валюты (по умолчанию: RUB)
 
     Returns:
         Formatted currency string
@@ -61,13 +62,13 @@ def format_currency(amount: float | int | None, currency: str = 'RUB') -> str:
 
 def format_duration_days(days: int | None) -> str:
     '''
-    Format duration in days with proper Russian declension.
+    Форматирование продолжительности в днях с правильным русским склонением.
 
     Args:
-        days: Number of days
+        days: Количество дней
 
     Returns:
-        Formatted string (e.g., "5 дней", "1 день", "22 дня")
+        Форматированная строка (например, "5 дней", "1 день", "22 дня")
     '''
     if days is None:
         return 'Не указано'
@@ -82,27 +83,27 @@ def format_duration_days(days: int | None) -> str:
 
 def format_warranty_status(is_active: bool) -> str:
     '''
-    Format warranty status.
+    Форматирование статуса гарантии.
 
     Args:
-        is_active: Whether warranty is active
+        is_active: Является ли гарантия активной
 
     Returns:
-        Formatted status string
+        Форматированная строка статуса
     '''
     return 'Активна' if is_active else 'Истекла'
 
 
 def format_json_output(data: Any, indent: int = 2) -> str:
     '''
-    Format data as pretty JSON.
+    Форматирование данных в красивый JSON.
 
     Args:
-        data: Data to format
-        indent: Indentation level
+        data: Данные для форматирования
+        indent: Уровень отступа
 
     Returns:
-        JSON string
+        Строка JSON
     '''
     return json.dumps(data, ensure_ascii=False, indent=indent, default=str)
 
@@ -111,15 +112,15 @@ def format_table(
     headers: list[str], rows: list[list[Any]], max_width: int = 120
 ) -> str:
     '''
-    Format data as ASCII table.
+    Форматирование данных в ASCII таблицу.
 
     Args:
-        headers: Column headers
-        rows: Data rows
-        max_width: Maximum table width
+        headers: Заголовки столбцов
+        rows: Строки данных
+        max_width: Максимальная ширина таблицы
 
     Returns:
-        Formatted table string
+        Форматированная строка таблицы
     '''
     if not rows:
         return 'Нет данных'
@@ -161,7 +162,9 @@ def format_table(
         ]
         row_line = (
             '| '
-            + ' | '.join(cells[i].ljust(col_widths[i]) for i in range(num_cols))
+            + ' | '.join(cells[i].ljust(
+                col_widths[i]) for i in range(num_cols)
+                )
             + ' |'
         )
         lines.append(row_line)
@@ -172,14 +175,14 @@ def format_table(
 
 def format_bullet_list(items: list[str], indent: int = 0) -> str:
     '''
-    Format items as bullet list.
+    Форматирование списка в список с маркерами.
 
     Args:
-        items: List items
-        indent: Indentation level
+        items: Список элементов
+        indent: Уровень отступа
 
     Returns:
-        Formatted bullet list
+        Форматированный список с маркерами
     '''
     prefix = ' ' * indent
     return '\n'.join(f'{prefix}• {item}' for item in items)
@@ -187,30 +190,36 @@ def format_bullet_list(items: list[str], indent: int = 0) -> str:
 
 def format_numbered_list(items: list[str], indent: int = 0) -> str:
     '''
-    Format items as numbered list.
+    Форматирование списка в нумерованный список.
 
     Args:
-        items: List items
-        indent: Indentation level
+        items: Список элементов
+        indent: Уровень отступа
 
     Returns:
-        Formatted numbered list
+        Форматированный нумерованный список
     '''
     prefix = ' ' * indent
-    return '\n'.join(f'{prefix}{i + 1}. {item}' for i, item in enumerate(items))
+    return (
+        '\n'.join(f'{prefix}{i + 1}. {item}' for i, item in enumerate(items))
+        )
 
 
-def truncate_text(text: str, max_length: int = 100, suffix: str = '...') -> str:
+def truncate_text(
+    text: str,
+    max_length: int = 100,
+    suffix: str = '...',
+) -> str:
     '''
-    Truncate text to maximum length.
+    Обрезание текста до максимальной длины.
 
     Args:
-        text: Text to truncate
-        max_length: Maximum length
-        suffix: Suffix to add if truncated
+        text: Текст для обрезки
+        max_length: Максимальная длина
+        suffix: Суффикс для добавления если обрезан
 
     Returns:
-        Truncated text
+        Обрезанный текст
     '''
     if len(text) <= max_length:
         return text
@@ -219,51 +228,51 @@ def truncate_text(text: str, max_length: int = 100, suffix: str = '...') -> str:
 
 def highlight_warning(text: str) -> str:
     '''
-    Highlight warning text.
+    Подсветка предупреждения.
 
     Args:
-        text: Warning text
+        text: Текст предупреждения
 
     Returns:
-        Formatted warning
+        Форматированный текст предупреждения
     '''
     return f'⚠️  ВНИМАНИЕ: {text}'
 
 
 def highlight_error(text: str) -> str:
     '''
-    Highlight error text.
+    Подсветка ошибки.
 
     Args:
-        text: Error text
+        text: Текст ошибки
 
     Returns:
-        Formatted error
+        Форматированный текст ошибки
     '''
     return f'❌ ОШИБКА: {text}'
 
 
 def highlight_success(text: str) -> str:
     '''
-    Highlight success text.
+    Подсветка успешного текста.
 
     Args:
-        text: Success text
+        text: Текст успешного результата
 
     Returns:
-        Formatted success message
+        Форматированный текст успешного результата
     '''
     return f'✅ {text}'
 
 
 def highlight_info(text: str) -> str:
     '''
-    Highlight info text.
+    Подсветка информационного текста.
 
     Args:
-        text: Info text
+        text: Текст информации
 
     Returns:
-        Formatted info message
+        Форматированный текст информации
     '''
     return f'ℹ️  {text}'

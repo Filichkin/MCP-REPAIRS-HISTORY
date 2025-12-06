@@ -1,13 +1,13 @@
 '''
-MCP (Model Context Protocol) client for warranty service tools.
+MCP (Model Context Protocol) клиент для сервиса гарантийных инструментов.
 
-This module provides a client for interacting with the MCP server that
-exposes warranty-related tools and data sources.
+Этот модуль предоставляет клиент для взаимодействия с MCP сервером,
+который предоставляет инструменты и данные для работы с гарантийными вопросами.
 '''
 
-import asyncio
 from typing import Any, Optional
 from datetime import datetime, timedelta
+
 import httpx
 from loguru import logger
 from tenacity import (
@@ -21,38 +21,38 @@ from backend.config import settings, MCPTools
 
 
 class MCPClientError(Exception):
-    '''Base exception for MCP client errors.'''
+    '''Базовое исключение для ошибок MCP клиента.'''
 
     pass
 
 
 class MCPConnectionError(MCPClientError):
-    '''Raised when connection to MCP server fails.'''
+    '''Исключение при ошибке соединения с MCP сервером.'''
 
     pass
 
 
 class MCPToolNotFoundError(MCPClientError):
-    '''Raised when requested tool is not available.'''
+    '''Исключение при ошибке не найденного инструмента.'''
 
     pass
 
 
 class MCPValidationError(MCPClientError):
-    '''Raised when tool input validation fails.'''
+    '''Исключение при ошибке валидации входных данных инструмента.'''
 
     pass
 
 
 class MCPClient:
     '''
-    Client for interacting with MCP server.
+    Клиент для взаимодействия с MCP сервером.
 
-    This client handles:
-    - Tool discovery and validation
-    - Asynchronous tool execution
-    - Retry logic and error handling
-    - Optional response caching
+    Этот клиент обрабатывает:
+    - Поиск и валидацию инструментов
+    - Асинхронное выполнение инструментов
+    - Логику повторных попыток и обработку ошибок
+    - Опциональное кэширование ответов
     '''
 
     def __init__(
@@ -63,13 +63,14 @@ class MCPClient:
         enable_cache: bool = True,
     ) -> None:
         '''
-        Initialize MCP client.
+        Инициализация MCP клиента.
 
         Args:
-            base_url: MCP server base URL (default from settings)
-            timeout: Request timeout in seconds (default from settings)
-            max_retries: Maximum retry attempts (default from settings)
-            enable_cache: Enable response caching
+            base_url: Базовый URL MCP сервера (по умолчанию из settings)
+            timeout: Таймаут запроса в секундах (по умолчанию из settings)
+            max_retries: Максимальное количество повторных попыток
+            (по умолчанию из settings)
+            enable_cache: Включить кэширование ответов
         '''
         self.base_url = base_url or settings.mcp_server_url
         self.timeout = timeout or settings.mcp_timeout
@@ -83,91 +84,98 @@ class MCPClient:
         # HTTP client
         self._client: Optional[httpx.AsyncClient] = None
 
-        logger.info(f'MCP client initialized with base_url={self.base_url}')
+        logger.info(f'MCP клиент инициализирован с base_url={self.base_url}')
 
     async def __aenter__(self) -> 'MCPClient':
-        '''Async context manager entry.'''
+        '''Асинхронный контекстный менеджер входа.'''
         await self.connect()
         return self
 
-    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        '''Async context manager exit.'''
+    async def __aexit__(
+        self,
+        exc_type: Any,
+        exc_val: Any,
+        exc_tb: Any,
+    ) -> None:
+        '''Асинхронный контекстный менеджер выхода.'''
         await self.close()
 
     async def connect(self) -> None:
-        '''Establish connection to MCP server.'''
+        '''Установление соединения с MCP сервером.'''
         if self._client is None:
             self._client = httpx.AsyncClient(
                 base_url=self.base_url,
                 timeout=self.timeout,
                 follow_redirects=True,
             )
-            logger.debug('MCP HTTP client created')
+            logger.debug('MCP HTTP клиент создан')
 
     async def close(self) -> None:
-        '''Close connection to MCP server.'''
+        '''Закрытие соединения с MCP сервером.'''
         if self._client is not None:
             await self._client.aclose()
             self._client = None
-            logger.debug('MCP HTTP client closed')
+            logger.debug('MCP HTTP клиент закрыт')
 
     def _get_cache_key(self, tool_name: str, **kwargs: Any) -> str:
-        '''Generate cache key from tool name and arguments.'''
+        '''Генерация ключа кэша из названия инструмента и аргументов.'''
         # Simple cache key: tool_name + sorted args
         args_str = '_'.join(f'{k}={v}' for k, v in sorted(kwargs.items()))
         return f'{tool_name}:{args_str}'
 
     def _get_from_cache(self, cache_key: str) -> Optional[Any]:
-        '''Get value from cache if not expired.'''
+        '''Получение значения из кэша, если оно не истекло.'''
         if not self.enable_cache:
             return None
 
         if cache_key in self._cache:
             value, timestamp = self._cache[cache_key]
             if datetime.now() - timestamp < self._cache_ttl:
-                logger.debug(f'Cache hit for key: {cache_key}')
+                logger.debug(f'Кэш hit для ключа: {cache_key}')
                 return value
             else:
                 # Expired, remove from cache
                 del self._cache[cache_key]
-                logger.debug(f'Cache expired for key: {cache_key}')
+                logger.debug(f'Кэш истек для ключа: {cache_key}')
 
         return None
 
     def _put_to_cache(self, cache_key: str, value: Any) -> None:
-        '''Put value to cache with current timestamp.'''
+        '''Добавление значения в кэш с текущей временной меткой.'''
         if self.enable_cache:
             self._cache[cache_key] = (value, datetime.now())
-            logger.debug(f'Cached value for key: {cache_key}')
+            logger.debug(f'Значение добавлено в кэш для ключа: {cache_key}')
 
     def clear_cache(self) -> None:
-        '''Clear all cached responses.'''
+        '''Очистка всех кэшированных ответов.'''
         self._cache.clear()
-        logger.info('Cache cleared')
+        logger.info('Кэш очищен')
 
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
-        retry=retry_if_exception_type((httpx.TimeoutException, httpx.NetworkError)),
+        retry=retry_if_exception_type(
+            (httpx.TimeoutException, httpx.NetworkError)
+            ),
         reraise=True,
     )
     async def _call_tool(
         self, tool_name: str, **kwargs: Any
     ) -> dict[str, Any]:
         '''
-        Call MCP tool with retry logic.
+        Вызов MCP инструмента с логикой повторных попыток.
 
         Args:
-            tool_name: Name of the tool to call
-            **kwargs: Tool arguments
+            tool_name: Название инструмента для вызова
+            **kwargs: Аргументы инструмента
 
         Returns:
-            Tool response data
+            Данные ответа инструмента
 
         Raises:
-            MCPConnectionError: If connection fails
-            MCPToolNotFoundError: If tool not found
-            MCPValidationError: If validation fails
+            MCPConnectionError: Если соединение не установлено
+            MCPToolNotFoundError: Если инструмент не найден
+            MCPValidationError: Если валидация не прошла
         '''
         if self._client is None:
             await self.connect()
@@ -178,7 +186,10 @@ class MCPClient:
             # MCP server endpoint format: /tools/{tool_name}
             endpoint = f'/tools/{tool_name}'
 
-            logger.debug(f'Calling MCP tool: {tool_name} with args: {kwargs}')
+            logger.debug(
+                f'Вызов MCP инструмента: {tool_name} с аргументами: '
+                f'{kwargs}'
+            )
 
             response = await self._client.post(
                 endpoint,
@@ -189,42 +200,43 @@ class MCPClient:
             response.raise_for_status()
             data = response.json()
 
-            logger.debug(f'MCP tool {tool_name} response received')
+            logger.debug(f'MCP инструмент {tool_name} ответил')
             return data
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 raise MCPToolNotFoundError(
-                    f'Tool not found: {tool_name}'
+                    f'Инструмент не найден: {tool_name}'
                 ) from e
             elif e.response.status_code == 422:
                 raise MCPValidationError(
-                    f'Validation error for tool {tool_name}: {e.response.text}'
+                    f'Ошибка валидации для инструмента {tool_name}: '
+                    f'{e.response.text}'
                 ) from e
             else:
                 raise MCPConnectionError(
-                    f'HTTP error calling tool {tool_name}: {e}'
+                    f'HTTP ошибка при вызове инструмента {tool_name}: {e}'
                 ) from e
 
         except (httpx.TimeoutException, httpx.NetworkError) as e:
             raise MCPConnectionError(
-                f'Connection error calling tool {tool_name}: {e}'
+                f'Ошибка соединения при вызове инструмента {tool_name}: {e}'
             ) from e
 
         except Exception as e:
             raise MCPClientError(
-                f'Unexpected error calling tool {tool_name}: {e}'
+                f'Неожиданная ошибка при вызове инструмента {tool_name}: {e}'
             ) from e
 
     async def warranty_days(self, vin: str) -> dict[str, Any]:
         '''
-        Get warranty repair days statistics by year.
+        Получить статистику дней в ремонте по годам владения автомобиля.
 
         Args:
-            vin: Vehicle Identification Number
+            vin: VIN номер автомобиля
 
         Returns:
-            Dictionary with yearly statistics of repair days
+            Словарь с статистикой дней в ремонте по годам владения автомобиля
         '''
         cache_key = self._get_cache_key(MCPTools.WARRANTY_DAYS, vin=vin)
         cached = self._get_from_cache(cache_key)
@@ -237,13 +249,13 @@ class MCPClient:
 
     async def warranty_history(self, vin: str) -> dict[str, Any]:
         '''
-        Get warranty claims history.
+        Получить историю гарантийных обращений автомобиля.
 
         Args:
-            vin: Vehicle Identification Number
+            vin: VIN номер автомобиля
 
         Returns:
-            Dictionary with warranty history records
+            Словарь с историей гарантийных обращений автомобиля
         '''
         cache_key = self._get_cache_key(MCPTools.WARRANTY_HISTORY, vin=vin)
         cached = self._get_from_cache(cache_key)
@@ -256,13 +268,13 @@ class MCPClient:
 
     async def maintenance_history(self, vin: str) -> dict[str, Any]:
         '''
-        Get maintenance history.
+        Получить историю технического обслуживания автомобиля.
 
         Args:
-            vin: Vehicle Identification Number
+            vin: VIN номер автомобиля
 
         Returns:
-            Dictionary with maintenance records
+            Словарь с историей технического обслуживания автомобиля
         '''
         cache_key = self._get_cache_key(MCPTools.MAINTENANCE_HISTORY, vin=vin)
         cached = self._get_from_cache(cache_key)
@@ -275,13 +287,13 @@ class MCPClient:
 
     async def vehicle_repairs_history(self, vin: str) -> dict[str, Any]:
         '''
-        Get complete vehicle repairs history from dealer network.
+        Получить полную историю всех ремонтов автомобиля в дилерской сети.
 
         Args:
-            vin: Vehicle Identification Number
+            vin: VIN номер автомобиля
 
         Returns:
-            Dictionary with complete repair history
+            Словарь с полной историей всех ремонтов автомобиля в дилерской сети
         '''
         cache_key = self._get_cache_key(
             MCPTools.VEHICLE_REPAIRS_HISTORY, vin=vin
@@ -298,13 +310,14 @@ class MCPClient:
 
     async def compliance_rag(self, query: str) -> dict[str, Any]:
         '''
-        Search warranty compliance knowledge base using RAG.
+        Поиск информации в базе знаний гарантийной политики и законодательства.
 
         Args:
-            query: Search query
+            query: Запрос для поиска в базе знаний гарантийной политики
 
         Returns:
-            Dictionary with relevant compliance information
+            Словарь с релевантной информацией
+            о гарантийной политике и законодательстве
         '''
         cache_key = self._get_cache_key(MCPTools.COMPLIANCE_RAG, query=query)
         cached = self._get_from_cache(cache_key)
@@ -317,10 +330,10 @@ class MCPClient:
 
     async def health_check(self) -> dict[str, Any]:
         '''
-        Check MCP server health.
+        Проверка здоровья MCP сервера.
 
         Returns:
-            Health check response
+            Словарь с результатом проверки здоровья MCP сервера
         '''
         if self._client is None:
             await self.connect()
@@ -332,7 +345,7 @@ class MCPClient:
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            logger.error(f'Health check failed: {e}')
+            logger.error(f'Проверка здоровья MCP сервера failed: {e}')
             return {'status': 'unhealthy', 'error': str(e)}
 
 
@@ -342,10 +355,10 @@ _mcp_client: Optional[MCPClient] = None
 
 async def get_mcp_client() -> MCPClient:
     '''
-    Get global MCP client instance.
+    Получить глобальный экземпляр MCP клиента.
 
     Returns:
-        Initialized MCP client
+        Инициализированный MCP клиент
     '''
     global _mcp_client
 
@@ -357,7 +370,7 @@ async def get_mcp_client() -> MCPClient:
 
 
 async def close_mcp_client() -> None:
-    '''Close global MCP client instance.'''
+    '''Закрытие глобального экземпляра MCP клиента.'''
     global _mcp_client
 
     if _mcp_client is not None:

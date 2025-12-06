@@ -1,8 +1,8 @@
 '''
-VIN (Vehicle Identification Number) validation utilities.
+Валидация VIN (Vehicle Identification Number) номеров.
 
-This module provides functions for validating VIN numbers according to
-international standards.
+Этот модуль предоставляет функции для валидации VIN номеров в соответствии
+с международными стандартами.
 '''
 
 import re
@@ -10,12 +10,12 @@ from typing import Optional
 
 
 class VINValidator:
-    '''Validator for Vehicle Identification Numbers.'''
+    '''Валидатор для VIN номеров.'''
 
-    # VIN should be exactly 17 characters, excluding I, O, Q
+    # VIN должен содержать ровно 17 символов, за исключением I, O, Q
     VIN_PATTERN = re.compile(r'^[A-HJ-NPR-Z0-9]{17}$')
 
-    # Transliteration values for VIN check digit calculation
+    # Значения транслитерации для расчета контрольной цифры VIN
     TRANSLITERATION = {
         'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8,
         'J': 1, 'K': 2, 'L': 3, 'M': 4, 'N': 5, 'P': 7, 'R': 9,
@@ -24,21 +24,21 @@ class VINValidator:
         '8': 8, '9': 9,
     }
 
-    # Weight factors for check digit calculation
+    # Весовые коэффициенты для расчета контрольной цифры
     WEIGHTS = [8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2]
 
     @classmethod
     def validate(cls, vin: str) -> tuple[bool, Optional[str]]:
         '''
-        Validate VIN number.
+        Валидация VIN номера.
 
         Args:
-            vin: VIN number to validate
+            vin: VIN номер для валидации
 
         Returns:
-            Tuple of (is_valid, error_message)
-            If valid, error_message is None
-            If invalid, error_message describes the issue
+            Кортеж из (is_valid, error_message)
+            Если валидный, error_message равен None
+            Если невалидный, error_message описывает проблему
         '''
         if not vin:
             return False, 'VIN не может быть пустым'
@@ -48,15 +48,21 @@ class VINValidator:
 
         # Check length
         if len(vin) != 17:
-            return False, f'VIN должен содержать 17 символов, получено: {len(vin)}'
+            return (
+                False,
+                f'VIN должен содержать 17 символов, получено: {len(vin)}',
+                )
 
         # Check pattern
         if not cls.VIN_PATTERN.match(vin):
-            invalid_chars = set(c for c in vin if c in 'IOQ' or not c.isalnum())
+            invalid_chars = set(
+                c for c in vin if c in 'IOQ' or not c.isalnum()
+                )
             if invalid_chars:
                 return (
                     False,
-                    f'VIN содержит недопустимые символы: {", ".join(invalid_chars)}',
+                    f'VIN содержит недопустимые символы: '
+                    f'{", ".join(invalid_chars)}',
                 )
             return False, 'VIN содержит недопустимые символы'
 
@@ -65,32 +71,33 @@ class VINValidator:
     @classmethod
     def normalize(cls, vin: str) -> str:
         '''
-        Normalize VIN by converting to uppercase and stripping whitespace.
+        Нормализация VIN путем преобразования
+        в верхний регистр и удаления пробелов.
 
         Args:
-            vin: VIN number to normalize
+            vin: VIN номер для нормализации
 
         Returns:
-            Normalized VIN string
+            Нормализованный VIN строка
         '''
         return vin.upper().strip()
 
     @classmethod
     def extract_info(cls, vin: str) -> dict[str, str]:
         '''
-        Extract basic information from VIN.
+        Извлечение основной информации из VIN.
 
         Args:
-            vin: Valid VIN number
+            vin: Валидный VIN номер
 
         Returns:
-            Dictionary with VIN components:
-            - wmi: World Manufacturer Identifier (positions 1-3)
-            - vds: Vehicle Descriptor Section (positions 4-9)
-            - vis: Vehicle Identifier Section (positions 10-17)
-            - year_code: Model year code (position 10)
-            - plant_code: Assembly plant code (position 11)
-            - serial: Serial number (positions 12-17)
+            Словарь с компонентами VIN:
+            - wmi: World Manufacturer Identifier (позиции 1-3)
+            - vds: Vehicle Descriptor Section (позиции 4-9)
+            - vis: Vehicle Identifier Section (позиции 10-17)
+            - year_code: Model year code (позиция 10)
+            - plant_code: Assembly plant code (позиция 11)
+            - serial: Serial number (позиции 12-17)
         '''
         vin = cls.normalize(vin)
 
@@ -106,25 +113,25 @@ class VINValidator:
 
 def validate_vin(vin: str) -> tuple[bool, Optional[str]]:
     '''
-    Convenience function to validate VIN.
+    Удобная функция для валидации VIN.
 
     Args:
-        vin: VIN number to validate
+        vin: VIN номер для валидации
 
     Returns:
-        Tuple of (is_valid, error_message)
+        Кортеж из (is_valid, error_message)
     '''
     return VINValidator.validate(vin)
 
 
 def normalize_vin(vin: str) -> str:
     '''
-    Convenience function to normalize VIN.
+    Удобная функция для нормализации VIN.
 
     Args:
-        vin: VIN number to normalize
+        vin: VIN номер для нормализации
 
     Returns:
-        Normalized VIN string
+        Нормализованный VIN строка
     '''
     return VINValidator.normalize(vin)

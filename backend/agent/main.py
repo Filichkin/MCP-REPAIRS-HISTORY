@@ -1,7 +1,7 @@
 '''
-Main entry point for the warranty agent system.
+Главная точка входа для системы агента гарантийных претензий.
 
-This module provides CLI interface and starts the FastAPI server.
+Этот модуль предоставляет CLI интерфейс и запускает FastAPI сервер.
 '''
 
 import sys
@@ -16,24 +16,24 @@ from backend.agent.tools.mcp_client import get_mcp_client, close_mcp_client
 
 
 def setup_logging() -> None:
-    '''Configure logging with loguru.'''
-    # Remove default handler
+    '''Настройка логирования с помощью loguru.'''
+    # Удаление default handler
     logger.remove()
 
-    # Add console handler with format
+    # Добавление console handler с форматом
     logger.add(
         sys.stderr,
         format=(
             '<green>{time:YYYY-MM-DD HH:mm:ss}</green> | '
             '<level>{level: <8}</level> | '
-            '<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - '
+            '<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan>-'
             '<level>{message}</level>'
         ),
         level=settings.log_level,
         colorize=True,
     )
 
-    # Add file handler if not in debug mode
+    # Добавление file handler если не в режиме debug
     if not settings.app_debug:
         logger.add(
             'logs/agent_{time:YYYY-MM-DD}.log',
@@ -46,16 +46,16 @@ def setup_logging() -> None:
             ),
         )
 
-    logger.info('Logging configured')
+    logger.info('Логирование настроено')
 
 
 async def test_query(query: str, vin: Optional[str] = None) -> None:
     '''
-    Test query execution (for development/testing).
+    Тестирование выполнения запроса (для разработки/тестирования).
 
     Args:
-        query: Query text
-        vin: Optional VIN
+        query: Текст запроса
+        vin: Опциональный VIN
     '''
     logger.info(f'Testing query: {query}')
 
@@ -69,9 +69,11 @@ async def test_query(query: str, vin: Optional[str] = None) -> None:
         print('=' * 80)
         print(f'\nQuery: {result.query}')
         print(f'VIN: {result.vin or "N/A"}')
-        print(f'\nClassification:')
+        print('\nClassification:')
         if result.classification:
-            print(f'  - Repair Days: {result.classification.needs_repair_days}')
+            print(
+                f'  - Repair Days: {result.classification.needs_repair_days}'
+                )
             print(f'  - Compliance: {result.classification.needs_compliance}')
             print(
                 f'  - Dealer Insights: '
@@ -98,9 +100,9 @@ async def test_query(query: str, vin: Optional[str] = None) -> None:
 
 
 def run_server() -> None:
-    '''Start FastAPI server.'''
+    '''Запуск FastAPI сервера.'''
     logger.info(
-        f'Starting server on {settings.api_host}:{settings.api_port}'
+        f'Запуск сервера на {settings.api_host}:{settings.api_port}'
     )
 
     uvicorn.run(
@@ -113,7 +115,7 @@ def run_server() -> None:
 
 
 def main() -> None:
-    '''Main entry point.'''
+    '''Главная точка входа.'''
     setup_logging()
 
     logger.info(f'{settings.app_name} v{settings.app_version}')
@@ -129,7 +131,10 @@ def main() -> None:
         elif command == 'test':
             # Test mode
             if len(sys.argv) < 3:
-                print('Usage: python -m backend.agent.main test "<query>" [VIN]')
+                print(
+                    'Использование: python -m backend.agent.main test '
+                    '"<query>" [VIN]'
+                    )
                 sys.exit(1)
 
             query = sys.argv[2]
@@ -138,13 +143,13 @@ def main() -> None:
             asyncio.run(test_query(query, vin))
 
         else:
-            print(f'Unknown command: {command}')
-            print('Available commands: server, test')
+            print(f'Неизвестная команда: {command}')
+            print('Доступные команды: server, test')
             sys.exit(1)
 
     else:
         # Default: start server
-        print('Starting server... (use "server" or "test" command)')
+        print('Запуск сервера... (используйте команду "server" или "test")')
         run_server()
 
 
