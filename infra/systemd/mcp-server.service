@@ -1,0 +1,40 @@
+[Unit]
+Description=MCP Repairs History Server
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mcp
+Group=mcp
+WorkingDirectory=/opt/mcp-repairs-history/backend
+Environment="PATH=/opt/mcp-repairs-history/.venv/bin:/usr/local/bin:/usr/bin"
+EnvironmentFile=/opt/mcp-repairs-history/infra/.env
+
+# Запуск сервера
+ExecStart=/opt/mcp-repairs-history/.venv/bin/python -m mcp_server.server
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitInterval=200
+StartLimitBurst=5
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/mcp-repairs-history/logs
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mcp-server
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

@@ -13,7 +13,7 @@ from typing import Any, Optional
 from datetime import datetime, timedelta
 
 from mcp import ClientSession
-from mcp.client.sse import sse_client
+from mcp.client.streamable_http import streamablehttp_client
 from loguru import logger
 
 from backend.config import settings, MCPTools
@@ -60,6 +60,7 @@ class MCPClient:
         timeout: Optional[int] = None,
         max_retries: Optional[int] = None,
         enable_cache: bool = True,
+        auth_token: Optional[str] = None,
     ) -> None:
         '''
         Инициализация MCP клиента.
@@ -70,17 +71,20 @@ class MCPClient:
             max_retries: Максимальное количество повторных попыток
             (по умолчанию из settings)
             enable_cache: Включить кэширование ответов
+            auth_token: Bearer токен для аутентификации
+            (по умолчанию из settings)
         '''
         self.base_url = base_url or settings.mcp_server_url
         self.timeout = timeout or settings.mcp_timeout
         self.max_retries = max_retries or settings.mcp_max_retries
         self.enable_cache = enable_cache
+        self.auth_token = auth_token or settings.mcp_auth_token
 
         # Simple in-memory cache
         self._cache: dict[str, tuple[Any, datetime]] = {}
         self._cache_ttl = timedelta(seconds=settings.mcp_cache_ttl)
 
-        # MCP SSE client
+        # MCP HTTP client
         self._stack: Optional[AsyncExitStack] = None
         self._session: Optional[ClientSession] = None
 
@@ -104,9 +108,26 @@ class MCPClient:
         '''Установление соединения с MCP сервером.'''
         if self._session is None:
             stack = AsyncExitStack()
-            # Open SSE streams
-            read_stream, write_stream = (
-                await stack.enter_async_context(sse_client(url=self.base_url))
+            # Build URL with /mcp endpoint for Streamable HTTP transport
+            url = f'{self.base_url}/mcp'
+
+            # Prepare headers with auth token if provided
+            headers: dict[str, str] | None = None
+            if self.auth_token:
+                headers = {'Authorization': f'Bearer {self.auth_token}'}
+                logger.debug(
+                    'MCP клиент использует Bearer token аутентификацию'
+                    )
+
+            # Open Streamable HTTP streams
+            read_stream, write_stream, _ = (
+                await stack.enter_async_context(
+                    streamablehttp_client(
+                        url=url,
+                        timeout=self.timeout,
+                        headers=headers,
+                    )
+                )
             )
             # Open MCP session
             session = (
@@ -117,7 +138,7 @@ class MCPClient:
             await session.initialize()
             self._stack = stack
             self._session = session
-            logger.debug('MCP SSE клиент создан и инициализирован')
+            logger.debug('MCP HTTP клиент создан и инициализирован')
 
     async def close(self) -> None:
         '''Закрытие соединения с MCP сервером.'''
@@ -135,7 +156,7 @@ class MCPClient:
             finally:
                 self._stack = None
                 self._session = None
-                logger.debug('MCP SSE клиент закрыт')
+                logger.debug('MCP HTTP клиент закрыт')
 
     def _get_cache_key(self, tool_name: str, **kwargs: Any) -> str:
         '''Генерация ключа кэша из названия инструмента и аргументов.'''

@@ -39,10 +39,14 @@
    ```
 
 2. **Переменные окружения** (см. `infra/.env`):
-   - `GIGACHAT_API_KEY` - Ключ аутентификации GigaChat
-   - `GIGACHAT_SCOPE` - API scope (GIGACHAT_API_PERS или GIGACHAT_API_CORP)
-   - `GIGACHAT_MODEL` - Название модели (по умолчанию: GigaChat-2)
-   - `MCP_SERVER_URL` - URL MCP сервера (по умолчанию: http://localhost:8004/sse)
+   - `GIGACHAT_API_KEY` - Ключ для langchain_gigachat библиотеки
+   - `GIGACHAT_API_KEY_EVOLUTION` - API ключ для Evolution Platform (Api-Key)
+   - `EVOLUTION_PROJECT_ID` - ID проекта в Evolution Platform
+   - `GIGACHAT_USE_API` - Использовать прямой Evolution API вместо langchain (true/false, по умолчанию: false)
+   - `GIGACHAT_SCOPE` - API scope для langchain (GIGACHAT_API_PERS или GIGACHAT_API_CORP)
+   - `GIGACHAT_MODEL` - Название модели для langchain (по умолчанию: GigaChat-2)
+     - **Важно:** Для Evolution API всегда используется модель `GigaChat`, независимо от этой настройки
+   - `MCP_SERVER_URL` - URL MCP сервера (по умолчанию: http://localhost:8004)
    - `API_KEY`, `API_URL` - Credentials для внешнего API
 
 ## Установка
@@ -220,12 +224,37 @@ curl -X POST http://localhost:8005/agent/query \
 
 Настраиваются в `infra/.env`:
 
+**Базовые настройки:**
 ```env
+# Метод работы: true = прямой Evolution API, false = langchain_gigachat
+GIGACHAT_USE_API=true
+
+# Для langchain_gigachat:
+GIGACHAT_API_KEY=your-langchain-api-key
 GIGACHAT_MODEL=GigaChat-2
+GIGACHAT_SCOPE=GIGACHAT_API_PERS
+
+# Для Evolution Platform API:
+GIGACHAT_API_KEY_EVOLUTION=your-evolution-api-key
+EVOLUTION_PROJECT_ID=your-project-id
+
+# Общие настройки:
 GIGACHAT_TEMPERATURE=0.7
 GIGACHAT_TIMEOUT=60
 GIGACHAT_MAX_RETRIES=3
 ```
+
+**Расширенные параметры (только для Evolution API, `GIGACHAT_USE_API=true`):**
+```env
+GIGACHAT_TOP_P=0.9
+GIGACHAT_MAX_TOKENS=512
+GIGACHAT_REPETITION_PENALTY=1.0
+```
+
+**Примечания:**
+- При `GIGACHAT_USE_API=true` используется Evolution Platform API с аутентификацией через Api-Key
+- Evolution API всегда использует модель `GigaChat` (не зависит от `GIGACHAT_MODEL`)
+- `GIGACHAT_MODEL` применяется только при `GIGACHAT_USE_API=false` (langchain_gigachat)
 
 ### Настройки агентов
 
@@ -238,8 +267,8 @@ AGENT_ENABLE_STREAMING=true
 ### Настройки MCP клиента
 
 ```env
-MCP_SERVER_URL=http://localhost:8004/sse
-MCP_TRANSPORT=sse
+MCP_SERVER_URL=http://localhost:8004
+MCP_TRANSPORT=http
 MCP_TIMEOUT=30
 MCP_MAX_RETRIES=3
 MCP_CACHE_TTL=300
@@ -266,7 +295,8 @@ backend/agent/
 │       ├── report_summary.py
 │       └── aggregator.py
 ├── llm/             # LLM интеграция
-│   ├── gigachat_setup.py  # GigaChat клиент
+│   ├── gigachat_setup.py  # GigaChat менеджер (langchain/Evolution API)
+│   ├── gigachat_api_client.py  # Прямой клиент Evolution Platform API
 │   └── prompts.py   # Шаблоны промптов
 ├── tools/           # Внешние интеграции
 │   └── mcp_client.py  # MCP SSE клиент
@@ -322,10 +352,10 @@ logger.add(
 ERROR | Ошибка дней в ремонте: Инструмент не найден: warranty_days
 ```
 
-**Решение:** Убедитесь, что MCP сервер запущен на правильном URL с SSE транспортом:
+**Решение:** Убедитесь, что MCP сервер запущен на правильном URL:
 ```bash
 # Проверка MCP сервера
-curl http://localhost:8004/sse
+curl http://localhost:8004/health
 ```
 
 ### Ошибки классификатора

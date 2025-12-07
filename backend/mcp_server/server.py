@@ -1,30 +1,33 @@
 """MCP Server для истории ремонтов и обслуживания автомобилей."""
 
 import asyncio
-import time
 import httpx
+import time
 from typing import Any
 
 from fastmcp import FastMCP
 from fastmcp.tools.tool import ToolResult
-from mcp.types import TextContent
+from fastmcp.server.auth import StaticTokenVerifier
 from loguru import logger
+from mcp.types import TextContent
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from mcp_server.models import (
+    ComplianceRAGStructured,
+    Dealer,
+    FaultPart,
     RepairYear,
+    MaintenanceRecord,
+    MaintenanceHistoryStructured,
+    Operation,
+    RAGDocument,
+    ReplacedPart,
     WarrantyDaysStructured,
     WarrantyRecord,
     WarrantyHistoryStructured,
-    Dealer,
-    ReplacedPart,
-    Operation,
-    FaultPart,
-    MaintenanceRecord,
-    MaintenanceHistoryStructured,
     VehicleRepairRecord,
     VehicleRepairsHistoryStructured,
-    RAGDocument,
-    ComplianceRAGStructured,
 )
 from mcp_server.formatters import (
     format_warranty_days_text,
@@ -40,7 +43,44 @@ except ImportError:
     from backend.config import settings
 
 
-mcp = FastMCP('Vehicle Repairs History MCP Server')
+# ============================================================================
+# MCP Server Initialization
+# ============================================================================
+
+# Настройка аутентификации
+auth_provider = None
+if settings.mcp_auth_enabled:
+    if not settings.mcp_auth_token:
+        raise ValueError(
+            'MCP_AUTH_TOKEN must be set when MCP_AUTH_ENABLED is True'
+        )
+    # Используем StaticTokenVerifier для простой проверки токена
+    auth_provider = StaticTokenVerifier(
+        tokens={
+            settings.mcp_auth_token: {
+                'client_id': 'mcp-client',
+                'scopes': ['read', 'write'],
+            }
+        }
+    )
+    logger.info('✅ Bearer token authentication enabled')
+
+mcp = FastMCP(
+    'Vehicle Repairs History MCP Server',
+    auth=auth_provider,
+)
+
+
+# ============================================================================
+# Health Check Endpoint
+# ============================================================================
+
+
+@mcp.custom_route('/health', methods=['GET'])
+async def health_check(request: Request) -> JSONResponse:
+    """Health check endpoint для Docker и мониторинга."""
+    return JSONResponse({'status': 'ok'})
+
 
 # Глобальные переменные для RAG
 _access_token: str | None = None
@@ -1070,22 +1110,50 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
+    # Определяем URL сервера
+    server_url = (
+        f'http://{settings.mcp_server_host}:{settings.mcp_server_port}'
+    )
+
     print('🚗 Запуск MCP сервера истории ремонтов и обслуживания...')
-    print(f'📡 Сервер: {settings.mcp_server_url}')
-    print(f'🔗 SSE endpoint: {settings.mcp_server_url}/sse')
-    print(f'📧 Messages: {settings.mcp_server_url}/messages/')
+    print(f'📡 Транспорт: {settings.mcp_transport.upper()} (Streamable HTTP)')
+    print(f'🌐 Сервер: {server_url}')
+    print(f'🔗 Endpoint: {server_url}/mcp/v1/')
+    print(f'🏠 Host: {settings.mcp_server_host}')
+    print(f'🔌 Port: {settings.mcp_server_port}')
+    print()
     print('🛠️  Доступные инструменты:')
     print('   - warranty_days(vin) - статистика дней в ремонте по годам')
     print('   - warranty_history(vin) - история гарантийных обращений')
     print('   - maintenance_history(vin) - история техобслуживания')
     print('   - vehicle_repairs_history(vin) - история ремонтов DNM')
     print('   - compliance_rag(query) - поиск в базе знаний')
-    print(f'🔑 API: {settings.api_url}')
-    print('🔐 Используется Bearer token аутентификация')
+    print()
+    print(f'🔑 Backend API: {settings.api_url}')
+    print()
+
+    # Информация о безопасности
+    print('🔐 Безопасность:')
+    if settings.mcp_auth_enabled:
+        print('   ✅ Bearer token аутентификация: ВКЛЮЧЕНА')
+        print('   ⚠️  Требуется заголовок: Authorization: Bearer <token>')
+    else:
+        print(
+            '   ⚠️ Bearer token аутентификация: ОТКЛЮЧЕНА (не для production!)'
+        )
+
+    print(
+        '   💡 Для HTTPS используйте nginx reverse proxy '
+        '(см. docker-compose.yml)'
+    )
+
+    print()
     print('✨ Все tools возвращают структурированные JSON-ответы')
+    print('📚 Документация: backend/mcp_server/README.md')
     print()
 
     try:
+        # Запуск сервера
         mcp.run(
             transport=settings.mcp_transport,
             host=settings.mcp_server_host,
@@ -1093,3 +1161,6 @@ if __name__ == '__main__':
         )
     except KeyboardInterrupt:
         print('\n🛑 Сервер остановлен')
+    except Exception as e:
+        logger.error(f'❌ Ошибка запуска сервера: {e}')
+        sys.exit(1)

@@ -6,7 +6,7 @@ Cloud-RAG integration, GigaChat LLM, and agent system settings.
 '''
 
 import os
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -27,9 +27,11 @@ class Config(BaseSettings):
 
     # MCP Server Configuration
     mcp_server_url: str = 'http://localhost:8004'
-    mcp_transport: str = 'sse'
+    # Changed from 'sse' to 'http' (Streamable HTTP)
+    mcp_transport: str = 'http'
     mcp_server_port: int = 8004
-    mcp_server_host: str = '127.0.0.1'
+    # Changed from '127.0.0.1' for public access
+    mcp_server_host: str = '0.0.0.0'
     mcp_timeout: int = Field(
         default=30,
         ge=1,
@@ -44,6 +46,16 @@ class Config(BaseSettings):
         default=300,
         ge=0,
         description='TTL кэша MCP ответов в секундах'
+    )
+
+    # MCP Security Configuration (for production deployment)
+    mcp_auth_enabled: bool = Field(
+        default=False,
+        description='Enable Bearer token authentication for MCP endpoints'
+    )
+    mcp_auth_token: str = Field(
+        default='',
+        description='Bearer token for MCP authentication'
     )
 
     # Cloud-RAG Configuration
@@ -63,7 +75,11 @@ class Config(BaseSettings):
     # GigaChat Configuration
     gigachat_api_key: str = Field(
         default='',
-        description='Ключ аутентификации GigaChat API'
+        description='API ключ GigaChat для langchain_gigachat'
+    )
+    gigachat_api_key_evolution: str = Field(
+        default='',
+        description='API ключ GigaChat для Evolution Platform (Api-Key)'
     )
     gigachat_scope: Literal['GIGACHAT_API_PERS', 'GIGACHAT_API_CORP'] = Field(
         default='GIGACHAT_API_PERS',
@@ -88,6 +104,34 @@ class Config(BaseSettings):
         default=3,
         ge=1,
         description='Максимальное количество попыток для GigaChat API'
+    )
+
+    # GigaChat API Method Selection
+    gigachat_use_api: bool = Field(
+        default=False,
+        description=(
+            'Использовать прямой API вместо langchain_gigachat. '
+            'True - прямой API, False - langchain_gigachat'
+        )
+    )
+
+    # GigaChat API Advanced Parameters (используются только при use_api=True)
+    gigachat_top_p: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description='Nucleus sampling parameter для GigaChat API'
+    )
+    gigachat_max_tokens: int = Field(
+        default=512,
+        ge=1,
+        description='Максимальное количество токенов в ответе'
+    )
+    gigachat_repetition_penalty: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=2.0,
+        description='Штраф за повторения в GigaChat API'
     )
 
     # Agent Configuration
@@ -137,6 +181,16 @@ class Config(BaseSettings):
         description='Разрешенные источники CORS'
     )
 
+    @field_validator('gigachat_top_p', mode='before')
+    @classmethod
+    def validate_top_p(cls, value: any) -> Optional[float]:
+        '''
+        Конвертировать пустые строки в None для gigachat_top_p.
+        '''
+        if value == '' or value is None:
+            return None
+        return float(value)
+
     @field_validator('gigachat_api_key')
     @classmethod
     def validate_api_key(cls, value: str) -> str:
@@ -171,31 +225,31 @@ class AgentRoles:
     CLASSIFIER = {
         'name': 'Query Classifier',
         'description': 'Классифицирует запросы и определяет нужных агентов',
-        'temperature': 0.3,
+        'temperature': 0.1,
     }
 
     REPAIR_DAYS = {
         'name': 'Repair Days Tracker',
         'description': 'Анализирует дни простоя и прогнозирует риски',
-        'temperature': 0.5,
+        'temperature': 0.1,
     }
 
     COMPLIANCE = {
         'name': 'Warranty Compliance',
         'description': 'Интерпретирует гарантийную политику и права',
-        'temperature': 0.4,
+        'temperature': 0.1,
     }
 
     DEALER_INSIGHTS = {
         'name': 'Dealer Insights',
         'description': 'Анализирует историю ремонтов и выявляет паттерны',
-        'temperature': 0.6,
+        'temperature': 0.1,
     }
 
     REPORT_SUMMARY = {
         'name': 'Report & Summary',
         'description': 'Генерирует итоговые отчёты и справки',
-        'temperature': 0.5,
+        'temperature': 0.1,
     }
 
 
