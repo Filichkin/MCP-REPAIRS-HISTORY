@@ -9,7 +9,7 @@ from typing import Optional
 from langchain_gigachat import GigaChat
 from loguru import logger
 
-from backend.config import settings
+from backend.config import AgentRoles, settings
 
 
 class GigaChatManager:
@@ -76,7 +76,6 @@ def get_classifier_llm() -> GigaChat:
     Returns:
         Экземпляр GigaChat с низкой температурой для точного классификации
     '''
-    from backend.config import AgentRoles
 
     return GigaChatManager.get_llm(
         temperature=AgentRoles.CLASSIFIER['temperature']
@@ -90,7 +89,6 @@ def get_repair_days_llm() -> GigaChat:
     Returns:
         Экземпляр GigaChat с настройками для анализа дней в ремонте
     '''
-    from backend.config import AgentRoles
 
     return GigaChatManager.get_llm(
         temperature=AgentRoles.REPAIR_DAYS['temperature']
@@ -104,7 +102,6 @@ def get_compliance_llm() -> GigaChat:
     Returns:
         Экземпляр GigaChat с настройками для интерпретации соответствия
     '''
-    from backend.config import AgentRoles
 
     return GigaChatManager.get_llm(
         temperature=AgentRoles.COMPLIANCE['temperature']
@@ -118,7 +115,6 @@ def get_dealer_insights_llm() -> GigaChat:
     Returns:
         Экземпляр GigaChat с настройками для анализа шаблонов
     '''
-    from backend.config import AgentRoles
 
     return GigaChatManager.get_llm(
         temperature=AgentRoles.DEALER_INSIGHTS['temperature']
@@ -132,7 +128,6 @@ def get_report_summary_llm() -> GigaChat:
     Returns:
         Экземпляр GigaChat с настройками для генерации отчёта
     '''
-    from backend.config import AgentRoles
 
     return GigaChatManager.get_llm(
         temperature=AgentRoles.REPORT_SUMMARY['temperature']

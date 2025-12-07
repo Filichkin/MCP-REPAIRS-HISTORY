@@ -27,9 +27,11 @@ class Config(BaseSettings):
 
     # MCP Server Configuration
     mcp_server_url: str = 'http://localhost:8004'
-    mcp_transport: str = 'sse'
+    # Changed from 'sse' to 'http' (Streamable HTTP)
+    mcp_transport: str = 'http'
     mcp_server_port: int = 8004
-    mcp_server_host: str = '127.0.0.1'
+    # Changed from '127.0.0.1' for public access
+    mcp_server_host: str = '0.0.0.0'
     mcp_timeout: int = Field(
         default=30,
         ge=1,
@@ -44,6 +46,16 @@ class Config(BaseSettings):
         default=300,
         ge=0,
         description='TTL кэша MCP ответов в секундах'
+    )
+
+    # MCP Security Configuration (for production deployment)
+    mcp_auth_enabled: bool = Field(
+        default=False,
+        description='Enable Bearer token authentication for MCP endpoints'
+    )
+    mcp_auth_token: str = Field(
+        default='',
+        description='Bearer token for MCP authentication'
     )
 
     # Cloud-RAG Configuration
@@ -171,31 +183,31 @@ class AgentRoles:
     CLASSIFIER = {
         'name': 'Query Classifier',
         'description': 'Классифицирует запросы и определяет нужных агентов',
-        'temperature': 0.3,
+        'temperature': 0.1,
     }
 
     REPAIR_DAYS = {
         'name': 'Repair Days Tracker',
         'description': 'Анализирует дни простоя и прогнозирует риски',
-        'temperature': 0.5,
+        'temperature': 0.1,
     }
 
     COMPLIANCE = {
         'name': 'Warranty Compliance',
         'description': 'Интерпретирует гарантийную политику и права',
-        'temperature': 0.4,
+        'temperature': 0.1,
     }
 
     DEALER_INSIGHTS = {
         'name': 'Dealer Insights',
         'description': 'Анализирует историю ремонтов и выявляет паттерны',
-        'temperature': 0.6,
+        'temperature': 0.1,
     }
 
     REPORT_SUMMARY = {
         'name': 'Report & Summary',
         'description': 'Генерирует итоговые отчёты и справки',
-        'temperature': 0.5,
+        'temperature': 0.1,
     }
 
 

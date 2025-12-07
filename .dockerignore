@@ -1,0 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Documentation
+docs/_build/
+docs/requirements.txt
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+
+# Certificates (will be mounted)
+infra/certs/
+
+# Logs
+*.log
+infra/nginx/logs/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Development
+README.md
+DEPLOYMENT.md
+LICENSE
+.pre-commit-config.yaml

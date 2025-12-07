@@ -3,7 +3,7 @@ import asyncio
 from fastmcp import Client
 
 
-MCP_URL = 'http://localhost:8004/sse'
+MCP_URL = 'http://0.0.0.0:8004/mcp'
 TEST_VIN = 'XWEG3417BN0009095'
 TEST_QUERY = 'Что делать в случае повторного ремонта?'
 
