@@ -12,16 +12,9 @@ from contextlib import AsyncExitStack
 from typing import Any, Optional
 from datetime import datetime, timedelta
 
-import httpx
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 from loguru import logger
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-)
 
 from backend.config import settings, MCPTools
 
@@ -134,7 +127,10 @@ class MCPClient:
             except (asyncio.CancelledError, GeneratorExit):
                 pass
             except RuntimeError as e:
-                if 'exit cancel scope in a different task' not in str(e).lower():
+                if (
+                    'exit cancel scope in a different task'
+                    not in str(e).lower()
+                ):
                     raise
             finally:
                 self._stack = None
@@ -186,7 +182,11 @@ class MCPClient:
             **kwargs: Аргументы инструмента
 
         Returns:
-            Данные ответа инструмента
+            Словарь с данными ответа инструмента:
+            - result: текстовое содержимое (для обратной совместимости)
+            - structured_content: структурированные JSON данные (если есть)
+            - meta: метаданные выполнения (если есть)
+            - is_error: флаг ошибки (если есть)
 
         Raises:
             MCPConnectionError: Если соединение не установлено
@@ -220,10 +220,41 @@ class MCPClient:
 
             response_text = '\n'.join(texts).strip()
 
-            logger.debug(f'MCP инструмент {tool_name} ответил')
+            # Извлекаем структурированные данные (если есть)
+            structured_content = getattr(result, 'structured_content', None)
 
-            # Возвращаем как словарь с текстом
-            return {'result': response_text}
+            # Извлекаем метаданные (если есть)
+            meta = getattr(result, '_meta', None)
+
+            # Проверяем флаг ошибки
+            is_error = getattr(result, 'isError', False)
+
+            logger.debug(
+                f'MCP инструмент {tool_name} ответил '
+                f'(is_error={is_error}, '
+                f'has_structured={structured_content is not None})'
+            )
+
+            # Формируем расширенный ответ
+            response = {
+                'result': response_text,  # Обратная совместимость
+            }
+
+            # Добавляем дополнительные поля если они есть
+            if structured_content is not None:
+                response['structured_content'] = structured_content
+
+            if meta is not None:
+                response['meta'] = meta
+
+            if is_error:
+                response['is_error'] = is_error
+                logger.warning(
+                    f'MCP инструмент {tool_name} вернул ошибку: '
+                    f'{response_text}'
+                )
+
+            return response
 
         except Exception as e:
             error_msg = str(e).lower()
@@ -351,7 +382,8 @@ class MCPClient:
 
             assert self._session is not None
 
-            # Список инструментов - простой способ проверить что сервер работает
+            # Список инструментов - простой способ
+            # проверить что сервер работает
             tools_response = await self._session.list_tools()
             tool_names = [t.name for t in tools_response.tools]
 
@@ -364,7 +396,10 @@ class MCPClient:
             logger.warning(f'Таймаут при проверке здоровья MCP сервера: {e}')
             return {'status': 'timeout', 'error': 'Connection timeout'}
         except Exception as e:
-            logger.error(f'Проверка здоровья MCP сервера failed: {e}', exc_info=True)
+            logger.error(
+                f'Проверка здоровья MCP сервера failed: {e}',
+                exc_info=True
+                )
             return {'status': 'unhealthy', 'error': str(e)}
 
 
