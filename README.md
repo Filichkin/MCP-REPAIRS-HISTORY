@@ -34,6 +34,12 @@ uv sync
 cp infra/.env.example infra/.env
 ```
 
+**Важные переменные окружения для GigaChat:**
+- `GIGACHAT_USE_API=true` - Использовать Evolution Platform API (рекомендуется)
+- `GIGACHAT_API_KEY_EVOLUTION` - API ключ Evolution Platform
+- `EVOLUTION_PROJECT_ID` - ID проекта в Evolution Platform
+- Или используйте `GIGACHAT_USE_API=false` с `GIGACHAT_API_KEY` для langchain_gigachat
+
 #### 3. Запуск MCP сервера
 
 ```bash

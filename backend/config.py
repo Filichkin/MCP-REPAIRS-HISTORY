@@ -6,7 +6,7 @@ Cloud-RAG integration, GigaChat LLM, and agent system settings.
 '''
 
 import os
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -75,7 +75,11 @@ class Config(BaseSettings):
     # GigaChat Configuration
     gigachat_api_key: str = Field(
         default='',
-        description='Ключ аутентификации GigaChat API'
+        description='API ключ GigaChat для langchain_gigachat'
+    )
+    gigachat_api_key_evolution: str = Field(
+        default='',
+        description='API ключ GigaChat для Evolution Platform (Api-Key)'
     )
     gigachat_scope: Literal['GIGACHAT_API_PERS', 'GIGACHAT_API_CORP'] = Field(
         default='GIGACHAT_API_PERS',
@@ -100,6 +104,34 @@ class Config(BaseSettings):
         default=3,
         ge=1,
         description='Максимальное количество попыток для GigaChat API'
+    )
+
+    # GigaChat API Method Selection
+    gigachat_use_api: bool = Field(
+        default=False,
+        description=(
+            'Использовать прямой API вместо langchain_gigachat. '
+            'True - прямой API, False - langchain_gigachat'
+        )
+    )
+
+    # GigaChat API Advanced Parameters (используются только при use_api=True)
+    gigachat_top_p: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description='Nucleus sampling parameter для GigaChat API'
+    )
+    gigachat_max_tokens: int = Field(
+        default=512,
+        ge=1,
+        description='Максимальное количество токенов в ответе'
+    )
+    gigachat_repetition_penalty: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=2.0,
+        description='Штраф за повторения в GigaChat API'
     )
 
     # Agent Configuration
@@ -148,6 +180,16 @@ class Config(BaseSettings):
         default=['*'],
         description='Разрешенные источники CORS'
     )
+
+    @field_validator('gigachat_top_p', mode='before')
+    @classmethod
+    def validate_top_p(cls, value: any) -> Optional[float]:
+        '''
+        Конвертировать пустые строки в None для gigachat_top_p.
+        '''
+        if value == '' or value is None:
+            return None
+        return float(value)
 
     @field_validator('gigachat_api_key')
     @classmethod
