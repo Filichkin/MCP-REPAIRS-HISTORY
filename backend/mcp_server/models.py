@@ -1,7 +1,7 @@
 """Pydantic модели для структурированных ответов MCP tools."""
+from typing import List, Optional, Any
 
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional, Any
 
 
 # ============================================================================
@@ -47,11 +47,11 @@ class Dealer(BaseModel):
 
     @field_validator('code', mode='before')
     @classmethod
-    def convert_code_to_string(cls, v: Any) -> Optional[str]:
+    def convert_code_to_string(cls, value: Any) -> Optional[str]:
         """Конвертирует code из int в str при необходимости."""
-        if v is None:
+        if value is None:
             return None
-        return str(v)
+        return str(value)
 
 
 class ReplacedPart(BaseModel):

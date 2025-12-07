@@ -1,33 +1,33 @@
 """MCP Server для истории ремонтов и обслуживания автомобилей."""
 
 import asyncio
-import time
 import httpx
+import time
 from typing import Any
 
 from fastmcp import FastMCP
 from fastmcp.tools.tool import ToolResult
 from fastmcp.server.auth import StaticTokenVerifier
-from mcp.types import TextContent
 from loguru import logger
+from mcp.types import TextContent
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from mcp_server.models import (
+    ComplianceRAGStructured,
+    Dealer,
+    FaultPart,
     RepairYear,
+    MaintenanceRecord,
+    MaintenanceHistoryStructured,
+    Operation,
+    RAGDocument,
+    ReplacedPart,
     WarrantyDaysStructured,
     WarrantyRecord,
     WarrantyHistoryStructured,
-    Dealer,
-    ReplacedPart,
-    Operation,
-    FaultPart,
-    MaintenanceRecord,
-    MaintenanceHistoryStructured,
     VehicleRepairRecord,
     VehicleRepairsHistoryStructured,
-    RAGDocument,
-    ComplianceRAGStructured,
 )
 from mcp_server.formatters import (
     format_warranty_days_text,
