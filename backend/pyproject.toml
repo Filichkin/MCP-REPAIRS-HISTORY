@@ -24,6 +24,7 @@ dependencies = [
     "aiohttp>=3.9.0",
     "tenacity>=8.2.3",
     "sseclient>=0.0.27",
+    "gradio>=4.0.0",
 ]
 
 [project.optional-dependencies]

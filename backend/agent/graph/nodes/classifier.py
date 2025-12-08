@@ -149,20 +149,39 @@ def _parse_classification_response(response: str) -> dict:
         # Fallback: try to infer from text
         response_lower = response.lower()
 
+        # Сначала проверяем наличие VIN
+        extracted_vin = _extract_vin_from_text(response)
+
+        repair_days_keywords = [
+            'дней', 'простой', 'лимит', '30', 'repair_days',
+        ]
+        compliance_keywords = [
+            'закон', 'право', 'гарантия', 'политика', 'compliance',
+            'контакт', 'телефон', 'email', 'связь', 'позвонить',
+            'написать', 'служба', 'процедур', 'документ', 'стандарт',
+            'что делать', 'повторн', 'процедура',
+        ]
+        # dealer_insights только для конкретных запросов с VIN
+        dealer_keywords = [
+            'история обслуживания', 'история ремонт', 'покажи ремонт',
+            'какие ремонты были', 'dealer',
+        ]
+
+        # dealer_insights активируется ТОЛЬКО если есть VIN
+        needs_dealer = (
+            extracted_vin is not None
+            and any(kw in response_lower for kw in dealer_keywords)
+        )
+
         return {
             'needs_repair_days': any(
-                keyword in response_lower
-                for keyword in ['дней', 'простой', 'лимит', '30', 'repair_days']
+                kw in response_lower for kw in repair_days_keywords
             ),
             'needs_compliance': any(
-                keyword in response_lower
-                for keyword in ['закон', 'право', 'гарантия', 'политика', 'compliance']
+                kw in response_lower for kw in compliance_keywords
             ),
-            'needs_dealer_insights': any(
-                keyword in response_lower
-                for keyword in ['история', 'ремонт', 'проблем', 'паттерн', 'dealer']
-            ),
-            'vin': _extract_vin_from_text(response),
+            'needs_dealer_insights': needs_dealer,
+            'vin': extracted_vin,
             'reasoning': 'Классификация на основе ключевых слов',
         }
 

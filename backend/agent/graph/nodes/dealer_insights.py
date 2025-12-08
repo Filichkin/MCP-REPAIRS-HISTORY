@@ -83,15 +83,19 @@ async def dealer_insights_node(state: AgentState) -> AgentState:
         llm = get_dealer_insights_llm()
         prompt = get_dealer_insights_prompt()
 
-        # Format data for LLM
-        warranty_formatted = json.dumps(
-            warranty_history, ensure_ascii=False, indent=2
+        # Format data for LLM using text formatters
+        # Extract 'result' field which contains formatted text
+        warranty_formatted = warranty_history.get(
+            'result',
+            json.dumps(warranty_history, ensure_ascii=False, indent=2)
         )
-        maintenance_formatted = json.dumps(
-            maintenance_history, ensure_ascii=False, indent=2
+        maintenance_formatted = maintenance_history.get(
+            'result',
+            json.dumps(maintenance_history, ensure_ascii=False, indent=2)
         )
-        repairs_formatted = json.dumps(
-            repairs_history, ensure_ascii=False, indent=2
+        repairs_formatted = repairs_history.get(
+            'result',
+            json.dumps(repairs_history, ensure_ascii=False, indent=2)
         )
 
         # Format prompt

@@ -225,31 +225,31 @@ class AgentRoles:
     CLASSIFIER = {
         'name': 'Query Classifier',
         'description': 'Классифицирует запросы и определяет нужных агентов',
-        'temperature': 0.1,
+        'temperature': 0.0,
     }
 
     REPAIR_DAYS = {
         'name': 'Repair Days Tracker',
         'description': 'Анализирует дни простоя и прогнозирует риски',
-        'temperature': 0.1,
+        'temperature': 0.0,
     }
 
     COMPLIANCE = {
         'name': 'Warranty Compliance',
         'description': 'Интерпретирует гарантийную политику и права',
-        'temperature': 0.1,
+        'temperature': 0.0,
     }
 
     DEALER_INSIGHTS = {
         'name': 'Dealer Insights',
         'description': 'Анализирует историю ремонтов и выявляет паттерны',
-        'temperature': 0.1,
+        'temperature': 0.0,
     }
 
     REPORT_SUMMARY = {
         'name': 'Report & Summary',
         'description': 'Генерирует итоговые отчёты и справки',
-        'temperature': 0.1,
+        'temperature': 0.0,
     }
 
 

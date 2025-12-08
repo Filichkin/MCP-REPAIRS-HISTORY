@@ -1,8 +1,8 @@
 '''
 Узел дней в ремонте для графа гарантийного агента.
 
-Этот узел анализирует дни в ремонте
-и проверяет соответствие 30-дневному лимиту.
+Этот узел получает статистику дней в ремонте из MCP сервера.
+Данные возвращаются в виде готовой Markdown таблицы без обработки LLM.
 '''
 
 import json
@@ -10,21 +10,19 @@ import json
 from loguru import logger
 
 from backend.agent.graph.state import AgentState, AgentResult
-from backend.agent.llm.gigachat_setup import get_repair_days_llm
-from backend.agent.llm.prompts import get_repair_days_prompt
 from backend.agent.tools.mcp_client import get_mcp_client
 from backend.config import GraphNodes, AgentRoles
 
 
 async def repair_days_node(state: AgentState) -> AgentState:
     '''
-    Анализировать дни в ремонте и проверять соответствие 30-дневному лимиту.
+    Получить статистику дней в ремонте в виде готовой Markdown таблицы.
 
     Args:
         state: Текущее состояние агента
 
     Returns:
-        Обновленное состояние с результатом анализа дней в ремонте
+        Обновленное состояние с таблицей статистики дней в ремонте
     '''
     logger.info('Узел дней в ремонте запущен')
 
@@ -59,28 +57,15 @@ async def repair_days_node(state: AgentState) -> AgentState:
             state.mark_step_completed(GraphNodes.REPAIR_DAYS)
             return state
 
-        # Get LLM and prompt
-        llm = get_repair_days_llm()
-        prompt = get_repair_days_prompt()
-
-        # Format data for LLM
-        data_formatted = json.dumps(
-            warranty_days_data, ensure_ascii=False, indent=2
+        # Extract formatted table directly from MCP response
+        # MCP server already returns a formatted Markdown table in 'result' field
+        # No LLM processing needed - just use the table as-is
+        analysis = warranty_days_data.get(
+            'result',
+            json.dumps(warranty_days_data, ensure_ascii=False, indent=2)
         )
 
-        # Format prompt
-        messages = prompt.format_messages(
-            query=state.query,
-            vin=state.vin,
-            warranty_days_data=data_formatted,
-        )
-
-        # Invoke LLM
-        logger.debug('Вызов дней в ремонте LLM')
-        response = await llm.ainvoke(messages)
-        analysis = response.content
-
-        logger.info('Анализ дней в ремонте завершен')
+        logger.info('Данные дней в ремонте получены (без LLM)')
 
         # Create result
         state.repair_days_result = AgentResult(

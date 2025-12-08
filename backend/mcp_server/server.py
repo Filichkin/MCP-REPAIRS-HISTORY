@@ -326,7 +326,6 @@ async def warranty_days(vin: str) -> ToolResult:
             content=[
                 TextContent(type='text', text=f'Ошибка: {data["error"]}')
                 ],
-            is_error=True,
             meta={
                 'vin': vin,
                 'error_type': 'api_error',
@@ -466,7 +465,6 @@ async def warranty_history(vin: str) -> ToolResult:
             content=[
                 TextContent(type='text', text=f'Ошибка: {data["error"]}')
                 ],
-            is_error=True,
             meta={
                 'vin': vin,
                 'error_type': 'api_error',
@@ -629,7 +627,6 @@ async def maintenance_history(vin: str) -> ToolResult:
             content=[
                 TextContent(type='text', text=f'Ошибка: {data[0]["error"]}')
             ],
-            is_error=True,
             meta={
                 'vin': vin,
                 'error_type': 'api_error',
@@ -763,7 +760,6 @@ async def vehicle_repairs_history(vin: str) -> ToolResult:
             content=[
                 TextContent(type='text', text=f'Ошибка: {data[0]["error"]}')
             ],
-            is_error=True,
             meta={
                 'vin': vin,
                 'error_type': 'api_error',
@@ -939,7 +935,6 @@ async def compliance_rag(query: str) -> ToolResult:
         logger.error(f'compliance_rag: {error_msg}')
         return ToolResult(
             content=[TextContent(type='text', text=error_msg)],
-            is_error=True,
             meta={
                 'query': query,
                 'error_type': 'authentication_error',
@@ -962,7 +957,6 @@ async def compliance_rag(query: str) -> ToolResult:
                 logger.error(f'compliance_rag: {error_msg}')
                 return ToolResult(
                     content=[TextContent(type='text', text=error_msg)],
-                    is_error=True,
                     meta={
                         'query': query,
                         'error_type': 'authentication_failed',
@@ -995,7 +989,6 @@ async def compliance_rag(query: str) -> ToolResult:
         logger.error(f'compliance_rag: {error_msg}')
         return ToolResult(
             content=[TextContent(type='text', text=error_msg)],
-            is_error=True,
             meta={
                 'query': query,
                 'error_type': 'http_error',
@@ -1012,7 +1005,6 @@ async def compliance_rag(query: str) -> ToolResult:
         logger.error(f'compliance_rag: {error_msg}')
         return ToolResult(
             content=[TextContent(type='text', text=error_msg)],
-            is_error=True,
             meta={
                 'query': query,
                 'error_type': 'timeout',
@@ -1028,7 +1020,6 @@ async def compliance_rag(query: str) -> ToolResult:
         logger.error(f'compliance_rag: {error_msg}')
         return ToolResult(
             content=[TextContent(type='text', text=error_msg)],
-            is_error=True,
             meta={
                 'query': query,
                 'error_type': 'network_error',
@@ -1044,7 +1035,6 @@ async def compliance_rag(query: str) -> ToolResult:
         logger.error(f'compliance_rag: {error_msg}')
         return ToolResult(
             content=[TextContent(type='text', text=error_msg)],
-            is_error=True,
             meta={
                 'query': query,
                 'error_type': 'unexpected_error',

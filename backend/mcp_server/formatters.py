@@ -16,7 +16,7 @@ def format_warranty_days_text(
     total_days: int
 ) -> str:
     """
-    Форматирует текстовое описание статистики дней в ремонте.
+    Форматирует статистику дней в ремонте в виде Markdown таблицы.
 
     Args:
         vin: VIN номер автомобиля
@@ -24,33 +24,25 @@ def format_warranty_days_text(
         total_days: Общее количество дней в ремонте
 
     Returns:
-        Отформатированный текст для отображения
+        Отформатированная таблица Markdown
     """
     if not repair_years:
         return f'Для VIN {vin}: записи не найдены'
 
-    lines = [f'Статистика ремонтов для VIN {vin}:']
-    lines.append(f'Всего лет владения: {len(repair_years)}')
-    lines.append(f'Общее количество дней в ремонте: {total_days}')
+    lines = ['## СТАТИСТИКА ДНЕЙ В РЕМОНТЕ']
     lines.append('')
+    lines.append('| Год владения | Дней в ремонте |')
+    lines.append('|--------------|----------------|')
 
     for year in repair_years:
-        current_marker = ' (текущий)' if year.is_current_year else ''
-        line = (
-            f'Год владения {year.year_number}{current_marker}: '
-            f'{year.days_in_repair} дней в ремонте'
-        )
-        lines.append(line)
+        year_label = f'{year.year_number}-й год'
+        if year.is_current_year:
+            year_label += ' (текущий)'
+        days_label = f'{year.days_in_repair} дней'
+        lines.append(f'| {year_label:<20} | {days_label:<14} |')
 
-    current_year_data = next(
-        (y for y in repair_years if y.is_current_year),
-        None
-    )
-    if current_year_data:
-        lines.append('')
-        lines.append(
-            f'В текущем году: {current_year_data.days_in_repair} дней'
-        )
+    lines.append('')
+    lines.append(f'**Итого за все годы: {total_days} дней**')
 
     return '\n'.join(lines)
 
