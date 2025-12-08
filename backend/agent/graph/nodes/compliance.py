@@ -54,9 +54,11 @@ async def compliance_node(state: AgentState) -> AgentState:
         llm = get_compliance_llm()
         prompt = get_compliance_prompt()
 
-        # Format data for LLM
-        data_formatted = json.dumps(
-            compliance_data, ensure_ascii=False, indent=2
+        # Format data for LLM using text formatter
+        # Extract 'result' field which contains formatted text
+        data_formatted = compliance_data.get(
+            'result',
+            json.dumps(compliance_data, ensure_ascii=False, indent=2)
         )
 
         # Format prompt

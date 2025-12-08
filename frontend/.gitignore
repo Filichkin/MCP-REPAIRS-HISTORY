@@ -24,3 +24,14 @@ dist-ssr
 *.sw?
 
 .DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Gradio
+gradio_cached_examples/
+flagged/
