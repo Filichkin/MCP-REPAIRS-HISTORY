@@ -8,11 +8,11 @@ import json
 
 from loguru import logger
 
-from backend.agent.graph.state import AgentState, AgentResult
-from backend.agent.llm.gigachat_setup import get_dealer_insights_llm
-from backend.agent.llm.prompts import get_dealer_insights_prompt
-from backend.agent.tools.mcp_client import get_mcp_client
-from backend.config import GraphNodes, AgentRoles
+from agent.graph.state import AgentState, AgentResult
+from agent.llm.gigachat_setup import get_dealer_insights_llm
+from agent.llm.prompts import get_dealer_insights_prompt
+from agent.tools.mcp_client import get_mcp_client
+from agent.config import GraphNodes, AgentRoles
 
 
 async def dealer_insights_node(state: AgentState) -> AgentState:

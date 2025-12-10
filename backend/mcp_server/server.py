@@ -37,10 +37,7 @@ from mcp_server.formatters import (
     format_compliance_rag_text,
 )
 
-try:
-    from config import settings
-except ImportError:
-    from backend.config import settings
+from mcp_server.config import settings
 
 
 # ============================================================================

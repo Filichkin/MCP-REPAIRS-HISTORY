@@ -1,4 +1,4 @@
-# Multi-stage build for MCP Server
+# Multi-stage build for Frontend
 # Stage 1: Build dependencies
 FROM python:3.12-slim AS builder
 
@@ -11,7 +11,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install dependencies to a virtual environment
-COPY backend/mcp_server/requirements.txt .
+COPY frontend/requirements.txt .
 RUN python -m venv /opt/venv && \
     /opt/venv/bin/pip install --no-cache-dir --upgrade pip && \
     /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
@@ -35,8 +35,8 @@ ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-# Copy only MCP server code
-COPY backend/mcp_server/ /app/mcp_server/
+# Copy only frontend code
+COPY frontend/ /app/frontend/
 
 # Copy environment file (will be overridden by docker-compose)
 COPY infra/.env /app/infra/.env
@@ -46,12 +46,15 @@ RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 USER appuser
 
-# Expose MCP server port
-EXPOSE 8004
+# Expose Gradio port
+EXPOSE 7860
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8004/health || exit 1
+# Health check (Gradio doesn't have a built-in health endpoint, so we check if port is open)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:7860/ || exit 1
 
-# Run MCP server
-CMD ["python", "-m", "mcp_server.server"]
+# Set working directory to frontend
+WORKDIR /app/frontend
+
+# Run Gradio frontend
+CMD ["python", "app.py"]

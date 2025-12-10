@@ -10,10 +10,10 @@ import re
 
 from loguru import logger
 
-from backend.agent.graph.state import AgentState, AgentClassification
-from backend.agent.llm.gigachat_setup import get_classifier_llm
-from backend.agent.llm.prompts import get_classifier_prompt
-from backend.config import GraphNodes
+from agent.graph.state import AgentState, AgentClassification
+from agent.llm.gigachat_setup import get_classifier_llm
+from agent.llm.prompts import get_classifier_prompt
+from agent.config import GraphNodes
 
 
 async def classifier_node(state: AgentState) -> AgentState:

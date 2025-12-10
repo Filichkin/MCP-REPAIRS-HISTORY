@@ -14,17 +14,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from loguru import logger
 
-from backend.config import settings
-from backend.agent.api.schemas import (
+from agent.config import settings
+from agent.api.schemas import (
     QueryRequest,
     QueryResponse,
     AgentResultResponse,
     HealthCheckResponse,
     ErrorResponse,
 )
-from backend.agent.graph import execute_query
-from backend.agent.tools.mcp_client import get_mcp_client, close_mcp_client
-from backend.agent.utils.vin_validator import validate_vin
+from agent.graph import execute_query
+from agent.tools.mcp_client import get_mcp_client, close_mcp_client
+from agent.utils.vin_validator import validate_vin
 
 
 @asynccontextmanager
@@ -95,7 +95,7 @@ async def health_check() -> HealthCheckResponse:
     # Check LLM (basic check)
     llm_status = 'ready'
     try:
-        from backend.agent.llm.gigachat_setup import get_classifier_llm
+        from agent.llm.gigachat_setup import get_classifier_llm
 
         _ = get_classifier_llm()
     except Exception as e:
@@ -241,7 +241,7 @@ if __name__ == '__main__':
     import uvicorn
 
     uvicorn.run(
-        'backend.agent.api.app:app',
+        'agent.api.app:app',
         host=settings.api_host,
         port=settings.api_port,
         reload=settings.api_reload,

@@ -10,8 +10,8 @@ from datetime import datetime
 
 from loguru import logger
 
-from backend.agent.graph.state import AgentState
-from backend.config import GraphNodes
+from agent.graph.state import AgentState
+from agent.config import GraphNodes
 
 
 async def aggregator_node(state: AgentState) -> AgentState:

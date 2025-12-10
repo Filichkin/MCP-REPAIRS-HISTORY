@@ -16,7 +16,7 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 from loguru import logger
 
-from backend.config import settings, MCPTools
+from agent.config import settings, MCPTools
 
 
 class MCPClientError(Exception):

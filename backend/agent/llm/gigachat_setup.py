@@ -23,8 +23,8 @@ from typing import Optional, Union
 from langchain_gigachat import GigaChat
 from loguru import logger
 
-from backend.config import AgentRoles, settings
-from backend.agent.llm.gigachat_api_client import (
+from agent.config import AgentRoles, settings
+from agent.llm.gigachat_api_client import (
     GigaChatAPIClient
 )
 

@@ -1,6 +1,6 @@
 '''LLM package for warranty agent system.'''
 
-from backend.agent.llm.gigachat_setup import (
+from agent.llm.gigachat_setup import (
     GigaChatManager,
     get_classifier_llm,
     get_repair_days_llm,
@@ -8,7 +8,7 @@ from backend.agent.llm.gigachat_setup import (
     get_dealer_insights_llm,
     get_report_summary_llm,
 )
-from backend.agent.llm.prompts import (
+from agent.llm.prompts import (
     get_classifier_prompt,
     get_repair_days_prompt,
     get_compliance_prompt,

@@ -1,4 +1,4 @@
-# Multi-stage build for MCP Server
+# Multi-stage build for Agent System
 # Stage 1: Build dependencies
 FROM python:3.12-slim AS builder
 
@@ -8,10 +8,12 @@ WORKDIR /build
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
+    gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install dependencies to a virtual environment
-COPY backend/mcp_server/requirements.txt .
+COPY backend/agent/requirements.txt .
 RUN python -m venv /opt/venv && \
     /opt/venv/bin/pip install --no-cache-dir --upgrade pip && \
     /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
@@ -35,8 +37,8 @@ ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-# Copy only MCP server code
-COPY backend/mcp_server/ /app/mcp_server/
+# Copy only agent code
+COPY backend/agent/ /app/agent/
 
 # Copy environment file (will be overridden by docker-compose)
 COPY infra/.env /app/infra/.env
@@ -46,12 +48,12 @@ RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 USER appuser
 
-# Expose MCP server port
-EXPOSE 8004
+# Expose agent API port
+EXPOSE 8005
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8004/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8005/health || exit 1
 
-# Run MCP server
-CMD ["python", "-m", "mcp_server.server"]
+# Run agent API server
+CMD ["python", "-m", "agent.main"]

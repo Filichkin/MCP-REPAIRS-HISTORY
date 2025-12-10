@@ -12,8 +12,8 @@ from langchain.callbacks.manager import CallbackManagerForToolRun
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from backend.agent.tools.mcp_client import get_mcp_client
-from backend.agent.utils.vin_validator import validate_vin
+from agent.tools.mcp_client import get_mcp_client
+from agent.utils.vin_validator import validate_vin
 
 
 class WarrantyDaysInput(BaseModel):

@@ -1,7 +1,9 @@
 version: '3.8'
 
 services:
+  # ========================================================================
   # MCP Server - Vehicle Repairs History
+  # ========================================================================
   mcp-server:
     build:
       context: .
@@ -24,8 +26,82 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    # MCP Server - запускается по умолчанию без профиля
+    # Для запуска только MCP сервера: docker compose up mcp-server
+    profiles:
+      - mcp
+      - full
 
-  # Nginx Reverse Proxy with HTTPS/TLS
+  # ========================================================================
+  # Agent System - Multi-agent warranty claims analysis
+  # ========================================================================
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    container_name: warranty-agent
+    restart: unless-stopped
+    env_file:
+      - infra/.env
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8005
+      - MCP_SERVER_URL=http://mcp-repairs-server:8004
+    ports:
+      - "8005:8005"
+    networks:
+      - mcp-network
+    depends_on:
+      mcp-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    profiles:
+      - full
+      - agent
+
+  # ========================================================================
+  # Frontend - Gradio UI
+  # ========================================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: warranty-frontend
+    restart: unless-stopped
+    env_file:
+      - infra/.env
+    environment:
+      - UI_SERVER_NAME=0.0.0.0
+      - UI_SERVER_PORT=7860
+      - API_BASE_URL=http://warranty-agent:8005
+    ports:
+      - "7860:7860"
+    networks:
+      - mcp-network
+    depends_on:
+      agent:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    profiles:
+      - full
+      - frontend
+
+  # ========================================================================
+  # Nginx Reverse Proxy with HTTPS/TLS (Optional)
+  # ========================================================================
+  # ВАЖНО: Nginx работает только с профилями 'full' или 'nginx'
+  # SSL сертификаты опциональны - nginx будет работать через HTTP если их нет
+  # Для генерации SSL: ./infra/scripts/generate-ssl-certs.sh
   nginx:
     image: nginx:alpine
     container_name: mcp-nginx
@@ -39,7 +115,8 @@ services:
       - ./infra/certs:/etc/nginx/certs:ro
       - ./infra/nginx/logs:/var/log/nginx
     depends_on:
-      - mcp-server
+      mcp-server:
+        condition: service_healthy
     networks:
       - mcp-network
     healthcheck:
@@ -47,7 +124,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    profiles:
+      - full
+      - nginx
 
 networks:
   mcp-network:
     driver: bridge
+    name: mcp-network
