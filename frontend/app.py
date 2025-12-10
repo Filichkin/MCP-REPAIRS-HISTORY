@@ -9,22 +9,19 @@ import httpx
 import gradio as gr
 from typing import Any
 
-
-API_BASE_URL = 'http://localhost:8005'
+from config import settings
 
 
 async def query_agent(
     message: str,
-    history: list[dict[str, str]],
-    vin: str = ''
+    history: list[dict[str, str]]
 ) -> str:
     '''
     Отправить запрос к агентной системе.
 
     Args:
-        message: Текст запроса пользователя
+        message: Текст запроса пользователя (VIN можно указать в тексте)
         history: История чата (не используется в текущей реализации)
-        vin: Опциональный VIN автомобиля
 
     Returns:
         Ответ от агентной системы
@@ -33,17 +30,14 @@ async def query_agent(
         return 'Пожалуйста, введите запрос.'
 
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=settings.chat_timeout) as client:
             payload: dict[str, Any] = {
                 'query': message.strip(),
                 'context': {}
             }
 
-            if vin and vin.strip():
-                payload['vin'] = vin.strip()
-
             response = await client.post(
-                f'{API_BASE_URL}/agent/query',
+                f'{settings.api_base_url}/agent/query',
                 json=payload
             )
 
@@ -76,56 +70,75 @@ def create_interface() -> gr.Blocks:
         Gradio Blocks интерфейс
     '''
     with gr.Blocks(title='Warranty Agent System') as interface:
+        # Заголовок
         gr.Markdown(
-            '# Система анализа гарантийных обращений\n'
-            'Задайте вопрос о гарантийных случаях, '
-            'ремонтах или истории обслуживания.'
+            '# Система истории ремонтов и обслуживания автомобилей\n'
+            '*Интеллектуальный помощник для работы с историей ремонтов*'
         )
 
+        # Основная область чата
         with gr.Row():
-            with gr.Column(scale=1):
-                vin_input = gr.Textbox(
-                    label='VIN автомобиля (необязательно)',
-                    placeholder='Z94C251BBLR102931',
-                    max_lines=1,
-                    info=(
-                        'Можно задавать общие вопросы без VIN или '
-                        'указать VIN для конкретного автомобиля'
+            with gr.Column(scale=7):
+                chatbot = gr.Chatbot(
+                    label='💬 Диалог с AI агентом',
+                    height=settings.chat_height,
+                    show_label=True
+                )
+
+                with gr.Row():
+                    msg = gr.Textbox(
+                        label='Ваш запрос',
+                        placeholder=(
+                            'Например: "Сколько дней автомобиль с VIN '
+                            'Z94C251BBLR102931 был в ремонте?"'
+                        ),
+                        scale=9,
+                        max_lines=settings.max_message_lines,
+                        show_label=False,
+                        container=False
                     )
-                )
+                    submit_btn = gr.Button(
+                        'Отправить',
+                        scale=1,
+                        variant='secondary',
+                        size='lg'
+                    )
 
+            # Боковая панель с примерами
+            with gr.Column(scale=3):
+                gr.Markdown('### 📋 Примеры запросов')
                 gr.Markdown(
-                    '**Примеры запросов:**\n\n'
-                    '*Общие вопросы (без VIN):*\n'
-                    '- Что делать если превысим сроки ремонта?\n'
-                    '- Какие права у клиента при гарантии?\n\n'
-                    '*С указанием VIN:*\n'
-                    '- Сколько дней автомобиль был в ремонте?\n'
-                    '- История обслуживания автомобиля\n'
-                    '- Анализ частоты ремонтов у дилера'
+                    '**Общие вопросы:**\n'
+                    '• Что делать если превысим сроки ремонта?\n'
+                    '• Какие права у клиента при гарантии?\n'
+                    '• Расскажи о процедуре возврата\n\n'
+                    '**Запросы с VIN:**\n'
+                    '• История для VIN Z94C251BBLR102931\n'
+                    '• Сколько дней в ремонте Z94C251BBLR102931?\n'
+                    '• Анализ ремонтов у дилера для VIN...\n\n'
+                    '*VIN можно указать прямо в тексте запроса*'
                 )
 
-        chatbot = gr.Chatbot(label='Диалог', height=500)
+                gr.Markdown('---')
+                gr.Markdown('### 🤖 Мультиагентная система')
+                gr.Markdown(
+                    '**Возможности:**\n\n'
+                    '✓ Анализ истории ремонтов\n\n'
+                    '✓ Проверка гарантийных условий\n\n'
+                    '✓ Оценка рисков и сроков\n\n'
+                    '✓ Генерация детальных отчётов'
+                )
 
-        with gr.Row():
-            msg = gr.Textbox(
-                label='Ваш запрос',
-                placeholder='Введите вопрос...',
-                scale=9,
-                max_lines=3
-            )
-            submit_btn = gr.Button('Отправить', scale=1, variant='primary')
-
+        # Футер с информацией
+        gr.Markdown('---')
         gr.Markdown(
-            '---\n'
-            '*Система использует мультиагентный подход '
-            'для анализа гарантийных данных.*'
+            '*💡 Система использует AI для анализа данных '
+            'и предоставления ответов*'
         )
 
         async def respond(
             message: str,
-            chat_history: list[dict[str, str]],
-            vin: str
+            chat_history: list[dict[str, str]]
         ) -> tuple[str, list[dict[str, str]]]:
             '''
             Обработать пользовательский запрос и обновить чат.
@@ -133,25 +146,24 @@ def create_interface() -> gr.Blocks:
             Args:
                 message: Сообщение пользователя
                 chat_history: История чата
-                vin: VIN автомобиля
 
             Returns:
                 Очищенное поле ввода и обновленная история чата
             '''
-            bot_message = await query_agent(message, chat_history, vin)
+            bot_message = await query_agent(message, chat_history)
             chat_history.append({'role': 'user', 'content': message})
             chat_history.append({'role': 'assistant', 'content': bot_message})
             return '', chat_history
 
         msg.submit(
             respond,
-            inputs=[msg, chatbot, vin_input],
+            inputs=[msg, chatbot],
             outputs=[msg, chatbot]
         )
 
         submit_btn.click(
             respond,
-            inputs=[msg, chatbot, vin_input],
+            inputs=[msg, chatbot],
             outputs=[msg, chatbot]
         )
 
@@ -159,9 +171,26 @@ def create_interface() -> gr.Blocks:
 
 
 if __name__ == '__main__':
+    # Создание темы для Gradio 6.x
+    theme = gr.themes.Soft(
+        primary_hue='purple',
+        secondary_hue='blue',
+        neutral_hue='slate',
+        font=['Arial', 'sans-serif']
+    )
+
+    # CSS для кастомизации шрифта
+    custom_css = '''
+        * {
+            font-family: Arial, sans-serif !important;
+        }
+    '''
+
     app = create_interface()
     app.launch(
-        server_name='0.0.0.0',
-        server_port=7860,
-        share=False
+        server_name=settings.ui_server_name,
+        server_port=settings.ui_server_port,
+        share=settings.ui_share,
+        theme=theme,
+        css=custom_css
     )
