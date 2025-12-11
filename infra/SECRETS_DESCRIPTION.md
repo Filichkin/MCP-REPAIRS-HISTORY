@@ -235,7 +235,7 @@
 - **Значение по умолчанию**: `false`
 - **Доступные значения**:
   - `false` - использовать `langchain_gigachat` (по умолчанию)
-  - `true` - использовать прямой API GigaChat
+  - `true` - использовать прямой API GigaChat через Evolution Platform
 - **Пример**: `false` или `true`
 
 ### GIGACHAT_TOP_P
