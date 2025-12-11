@@ -9,9 +9,9 @@ import json
 
 from loguru import logger
 
-from backend.agent.graph.state import AgentState, AgentResult
-from backend.agent.tools.mcp_client import get_mcp_client
-from backend.config import GraphNodes, AgentRoles
+from agent.graph.state import AgentState, AgentResult
+from agent.tools.mcp_client import get_mcp_client
+from agent.config import GraphNodes, AgentRoles
 
 
 async def repair_days_node(state: AgentState) -> AgentState:

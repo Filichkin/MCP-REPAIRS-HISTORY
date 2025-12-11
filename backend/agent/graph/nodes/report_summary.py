@@ -10,10 +10,10 @@ from typing import Any
 
 from loguru import logger
 
-from backend.agent.graph.state import AgentState
-from backend.agent.llm.gigachat_setup import get_report_summary_llm
-from backend.agent.llm.prompts import get_report_summary_prompt
-from backend.config import GraphNodes
+from agent.graph.state import AgentState
+from agent.llm.gigachat_setup import get_report_summary_llm
+from agent.llm.prompts import get_report_summary_prompt
+from agent.config import GraphNodes
 
 
 async def report_summary_node(state: AgentState) -> AgentState:

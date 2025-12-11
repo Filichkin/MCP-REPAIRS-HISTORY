@@ -1,8 +1,8 @@
 '''
-Configuration module for the MCP server and warranty agent system.
+Модуль конфигурации для системы гарантийных агентов.
 
-This module handles all configuration settings including MCP server,
-Cloud-RAG integration, GigaChat LLM, and agent system settings.
+Этот модуль обрабатывает все настройки, связанные с агентами,
+включая GigaChat LLM, поведение агентов и настройки API.
 '''
 
 import os
@@ -12,30 +12,26 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Config(BaseSettings):
-    '''Application settings loaded from environment variables.'''
+class AgentConfig(BaseSettings):
+    '''Настройки системы агентов загружены из переменных окружения.'''
 
     model_config = SettingsConfigDict(
         env_file=os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            '../infra/.env'
+            '../../infra/.env'
         ),
         env_file_encoding='utf-8',
         case_sensitive=False,
         extra='ignore',
     )
 
-    # MCP Server Configuration
+    # MCP Server Configuration (for client connection)
     mcp_server_url: str = 'http://localhost:8004'
-    # Changed from 'sse' to 'http' (Streamable HTTP)
     mcp_transport: str = 'http'
-    mcp_server_port: int = 8004
-    # Changed from '127.0.0.1' for public access
-    mcp_server_host: str = '0.0.0.0'
     mcp_timeout: int = Field(
         default=30,
         ge=1,
-        description='MCP API timeout in seconds'
+        description='Таймаут MCP API в секундах'
     )
     mcp_max_retries: int = Field(
         default=3,
@@ -48,52 +44,38 @@ class Config(BaseSettings):
         description='TTL кэша MCP ответов в секундах'
     )
 
-    # MCP Security Configuration (for production deployment)
+    # MCP Security Configuration
     mcp_auth_enabled: bool = Field(
         default=False,
-        description='Enable Bearer token authentication for MCP endpoints'
+        description='Включить аутентификацию Bearer токеном для MCP endpoints'
     )
     mcp_auth_token: str = Field(
         default='',
-        description='Bearer token for MCP authentication'
+        description='Bearer токен для аутентификации MCP'
     )
-
-    # Cloud-RAG Configuration
-    key_id: str
-    key_secret: str
-    auth_url: str
-    retrieve_url_template: str
-    knowledge_base_id: str
-    knowledge_base_version_id: str = 'latest'
-    retrieve_limit: int = 10
-    evolution_project_id: str
-
-    # External API Configuration
-    api_key: str = 'your-api-key'
-    api_url: str = 'http://127.0.0.1:8000'
 
     # GigaChat Configuration
     gigachat_api_key: str = Field(
         default='',
-        description='API ключ GigaChat для langchain_gigachat'
+        description='GigaChat API key for langchain_gigachat'
     )
     gigachat_api_key_evolution: str = Field(
         default='',
-        description='API ключ GigaChat для Evolution Platform (Api-Key)'
+        description='GigaChat API key for Evolution Platform (Api-Key)'
     )
     gigachat_scope: Literal['GIGACHAT_API_PERS', 'GIGACHAT_API_CORP'] = Field(
         default='GIGACHAT_API_PERS',
-        description='Область доступа GigaChat API'
+        description='GigaChat API scope'
     )
     gigachat_model: str = Field(
         default='GigaChat',
-        description='Имя модели GigaChat'
+        description='GigaChat model name'
     )
     gigachat_temperature: float = Field(
         default=0.7,
         ge=0.0,
         le=2.0,
-        description='Температура для ответов GigaChat',
+        description='Temperature for GigaChat responses',
     )
     gigachat_timeout: int = Field(
         default=60,
@@ -115,12 +97,12 @@ class Config(BaseSettings):
         )
     )
 
-    # GigaChat API Advanced Parameters (используются только при use_api=True)
+    # GigaChat API Advanced Parameters (used only when use_api=True)
     gigachat_top_p: Optional[float] = Field(
         default=None,
         ge=0.0,
         le=1.0,
-        description='Nucleus sampling parameter для GigaChat API'
+        description='Параметр nucleus sampling для GigaChat API'
     )
     gigachat_max_tokens: int = Field(
         default=512,
@@ -133,6 +115,9 @@ class Config(BaseSettings):
         le=2.0,
         description='Штраф за повторения в GigaChat API'
     )
+
+    # Evolution Platform Configuration
+    evolution_project_id: str
 
     # Agent Configuration
     agent_max_iterations: int = Field(
@@ -147,20 +132,26 @@ class Config(BaseSettings):
     )
     agent_enable_streaming: bool = Field(
         default=True,
-        description='Включение потоковой передачи ответов'
+        description='Включить потоковую передачу ответов'
     )
 
     # Application Configuration
     app_name: str = Field(
         default='Warranty Agent System',
-        description='Имя приложения'
+        description='Application name'
     )
-    app_version: str = Field(default='0.1.0', description='Версия приложения')
-    app_debug: bool = Field(default=False, description='Режим отладки')
+    app_version: str = Field(
+        default='0.1.0',
+        description='Версия приложения'
+    )
+    app_debug: bool = Field(
+        default=False,
+        description='Режим отладки'
+    )
     log_level: Literal['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'] = (
         Field(
             default='INFO',
-            description='Уровень логирования'
+            description='Logging level'
         )
     )
 
@@ -170,11 +161,11 @@ class Config(BaseSettings):
         default=8005,
         ge=1024,
         le=65535,
-        description='Порт FastAPI'
+        description='FastAPI port'
     )
     api_reload: bool = Field(
         default=False,
-        description='Включение автоперезагрузки для разработки'
+        description='Включить автоперезагрузку для разработки'
     )
     api_cors_origins: list[str] = Field(
         default=['*'],
@@ -185,7 +176,7 @@ class Config(BaseSettings):
     @classmethod
     def validate_top_p(cls, value: any) -> Optional[float]:
         '''
-        Конвертировать пустые строки в None для gigachat_top_p.
+        Преобразовать пустые строки в None для gigachat_top_p.
         '''
         if value == '' or value is None:
             return None
@@ -210,12 +201,12 @@ class Config(BaseSettings):
         if not value.startswith(('http://', 'https://')):
             raise ValueError(
                 'MCP_SERVER_URL должен начинаться с http:// или https://'
-                )
+            )
         return value.rstrip('/')
 
 
 # Global settings instance
-settings = Config()
+settings = AgentConfig()
 
 
 # Agent role configurations
@@ -235,8 +226,10 @@ class AgentRoles:
     }
 
     COMPLIANCE = {
-        'name': 'Warranty Compliance',
-        'description': 'Интерпретирует гарантийную политику и права',
+        'name': 'Warran(ty Compliance',
+        'description': (
+            'Интерпретирует гарантийную политику и стандарты клиентской службы'
+        ),
         'temperature': 0.0,
     }
 
@@ -265,7 +258,7 @@ class MCPTools:
 
     @classmethod
     def all_tools(cls) -> list[str]:
-        '''Return list of all available MCP tools.'''
+        '''Возвращает список всех доступных MCP инструментов.'''
         return [
             cls.WARRANTY_DAYS,
             cls.WARRANTY_HISTORY,
@@ -277,7 +270,7 @@ class MCPTools:
 
 # Graph node names
 class GraphNodes:
-    '''Идентификаторы узлов LangGraph.'''
+    '''LangGraph node identifiers.'''
 
     CLASSIFIER = 'classifier'
     REPAIR_DAYS = 'repair_days_tracker'

@@ -8,8 +8,8 @@ from typing import Literal
 from langgraph.graph import END
 from loguru import logger
 
-from backend.agent.graph.state import AgentState
-from backend.config import GraphNodes
+from agent.graph.state import AgentState
+from agent.config import GraphNodes
 
 
 def route_after_classifier(

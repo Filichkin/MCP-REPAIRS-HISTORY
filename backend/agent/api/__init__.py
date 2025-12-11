@@ -1,7 +1,7 @@
 '''API package for warranty agent system.'''
 
-from backend.agent.api.app import app
-from backend.agent.api.schemas import (
+from agent.api.app import app
+from agent.api.schemas import (
     QueryRequest,
     QueryResponse,
     HealthCheckResponse,

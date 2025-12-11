@@ -10,9 +10,9 @@ from typing import Optional
 import uvicorn
 from loguru import logger
 
-from backend.config import settings
-from backend.agent.graph import execute_query
-from backend.agent.tools.mcp_client import close_mcp_client
+from agent.config import settings
+from agent.graph import execute_query
+from agent.tools.mcp_client import close_mcp_client
 
 
 def setup_logging() -> None:
@@ -106,7 +106,7 @@ def run_server() -> None:
     )
 
     uvicorn.run(
-        'backend.agent.api.app:app',
+        'agent.api.app:app',
         host=settings.api_host,
         port=settings.api_port,
         reload=settings.api_reload,
@@ -132,7 +132,7 @@ def main() -> None:
             # Test mode
             if len(sys.argv) < 3:
                 print(
-                    'Использование: python -m backend.agent.main test '
+                    'Использование: python -m agent.main test '
                     '"<query>" [VIN]'
                     )
                 sys.exit(1)

@@ -8,19 +8,19 @@ from typing import Any
 from langgraph.graph import StateGraph, END
 from loguru import logger
 
-from backend.agent.graph.state import AgentState
-from backend.agent.graph.nodes.classifier import classifier_node
-from backend.agent.graph.nodes.repair_days import repair_days_node
-from backend.agent.graph.nodes.compliance import compliance_node
-from backend.agent.graph.nodes.dealer_insights import dealer_insights_node
-from backend.agent.graph.nodes.report_summary import report_summary_node
-from backend.agent.graph.nodes.aggregator import aggregator_node
-from backend.agent.graph.edges import (
+from agent.graph.state import AgentState
+from agent.graph.nodes.classifier import classifier_node
+from agent.graph.nodes.repair_days import repair_days_node
+from agent.graph.nodes.compliance import compliance_node
+from agent.graph.nodes.dealer_insights import dealer_insights_node
+from agent.graph.nodes.report_summary import report_summary_node
+from agent.graph.nodes.aggregator import aggregator_node
+from agent.graph.edges import (
     route_after_classifier,
     should_continue_to_report,
     route_to_end,
 )
-from backend.config import GraphNodes
+from agent.config import GraphNodes
 
 
 def create_warranty_graph() -> StateGraph:

@@ -1,76 +1,92 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# Virtual environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.nox/
-
-# Documentation
-docs/_build/
-docs/requirements.txt
+# General .dockerignore for all builds
+# This file is used by all Dockerfiles in the root
 
 # Git
 .git/
 .gitignore
 .gitattributes
 
-# CI/CD
-.github/
+# IDE and editor files
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+*~
+.DS_Store
 
-# Certificates (will be mounted)
-infra/certs/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Virtual environments (exclude from all images)
+backend/.venv/
+backend/venv/
+frontend/.venv/
+frontend/venv/
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# UV lock file (not needed in containers)
+backend/uv.lock
+
+# Documentation
+docs/
+*.md
+README.md
+LICENSE
+DEPLOYMENT.md
 
 # Logs
+logs/
 *.log
+*.log.*
 infra/nginx/logs/
 
+# Development and testing
+tests/
+test_*.py
+*_test.py
+pytest.ini
+.pytest_cache/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.pre-commit-config.yaml
+
+# Docker (avoid recursive copying)
+docker-compose*.yml
+.dockerignore
+
+# Certificates (will be mounted separately)
+infra/certs/
+
 # Temporary files
+tmp/
+temp/
 *.tmp
 *.bak
-*.swp
 
-# Development
-README.md
-DEPLOYMENT.md
-LICENSE
-.pre-commit-config.yaml
+# Config files (development)
+prompts.txt
+commands.txt

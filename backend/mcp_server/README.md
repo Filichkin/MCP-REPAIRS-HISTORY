@@ -636,6 +636,417 @@ return ToolResult(
 
 ---
 
+## Структура ответов MCP сервера
+
+Все инструменты возвращают ответы в формате JSON-RPC 2.0. Ниже приведены полные примеры ответов для каждого инструмента.
+
+### Общая структура ответа
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": <request_id>,
+  "result": {
+    "_meta": {
+      "vin": "<vin>",  // или "query" для compliance_rag
+      "data_source": "<source>",
+      "execution_time_ms": <number>,
+      "record_count": <number>,
+      "api_endpoint": "<url>",
+      "timestamp": "<ISO8601>"
+    },
+    "content": [
+      {
+        "type": "text",
+        "text": "<human-readable-text>"
+      }
+    ],
+    "structuredContent": {
+      // Структурированные данные
+    },
+    "isError": false
+  }
+}
+```
+
+### 1. warranty_days
+
+**Пример полного ответа:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "_meta": {
+      "vin": "Z94C241BBMR221738",
+      "data_source": "warranty_api",
+      "execution_time_ms": 202,
+      "record_count": 5,
+      "api_endpoint": "http://213.171.24.57",
+      "timestamp": "2025-12-11T12:30:00Z"
+    },
+    "content": [
+      {
+        "type": "text",
+        "text": "## СТАТИСТИКА ДНЕЙ В РЕМОНТЕ\n\n| Год владения | Дней в ремонте |\n|--------------|----------------|\n| 1-й год              | 0 дней         |\n| 2-й год              | 0 дней         |\n| 3-й год              | 0 дней         |\n| 4-й год              | 0 дней         |\n| 5-й год (текущий)    | 2 дней         |\n\n**Итого за все годы: 2 дней**"
+      }
+    ],
+    "structuredContent": {
+      "vin": "Z94C241BBMR221738",
+      "total_years": 5,
+      "repair_years": [
+        {
+          "year_number": 1,
+          "is_current_year": false,
+          "days_in_repair": 0
+        },
+        {
+          "year_number": 2,
+          "is_current_year": false,
+          "days_in_repair": 0
+        },
+        {
+          "year_number": 3,
+          "is_current_year": false,
+          "days_in_repair": 0
+        },
+        {
+          "year_number": 4,
+          "is_current_year": false,
+          "days_in_repair": 0
+        },
+        {
+          "year_number": 5,
+          "is_current_year": true,
+          "days_in_repair": 2
+        }
+      ],
+      "current_year_days": 2,
+      "total_days_in_repair": 2
+    },
+    "isError": false
+  }
+}
+```
+
+### 2. warranty_history
+
+**Пример полного ответа:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": {
+    "_meta": {
+      "vin": "Z94C241BBMR221738",
+      "data_source": "warranty_api",
+      "execution_time_ms": 34,
+      "record_count": 2,
+      "api_endpoint": "http://213.171.24.57",
+      "timestamp": "2025-12-11T12:31:13Z"
+    },
+    "content": [
+      {
+        "type": "text",
+        "text": "История гарантийных обращений VIN Z94C241BBMR221738\nВсего обращений: 2\nВсего заменено деталей: 1\nВсего выполнено работ: 3\n\n═══ Обращение 1 ═══\nГарантийное требование KM25000102 от 2025-06-10\nПробег: 133,731 км\nДилер: ООО \"Мегапарк\" (Новосибирск)\n\nДеталь-виновник: 971621JAA0\nОписание: ACTUATOR-INTAKE\n\nЗамененные детали:\n  • 971621JAA0: ACTUATOR-INTAKE\n\nВыполненные работы:\n  • 97108R00: INTAKE ACTUATOR, R&R\n\n═══ Обращение 2 ═══\nГарантийное требование KM25000109 от 2025-06-10\nПробег: 133,731 км\nДилер: ООО \"Мегапарк\" (Новосибирск)\n\nДеталь-виновник: 92700H0000\nОписание: LAMP ASSY-HIGH MOUNTED STOP\n\nВыполненные работы:\n  • 92750R00: High Mounted Stop Lamp, R&R\n  • 92750RZZ: \n"
+      }
+    ],
+    "structuredContent": {
+      "vin": "Z94C241BBMR221738",
+      "records": [
+        {
+          "serial": "KM25000102",
+          "date": "2025-06-10",
+          "odometer": 133731,
+          "dealer": {
+            "name": "ООО \"Мегапарк\"",
+            "code": "54005",
+            "city": "Новосибирск"
+          },
+          "fault_part": {
+            "part_number": "971621JAA0",
+            "description": "ACTUATOR-INTAKE"
+          },
+          "replaced_parts": [
+            {
+              "part_number": "971621JAA0",
+              "description": "ACTUATOR-INTAKE"
+            }
+          ],
+          "operations": [
+            {
+              "code": "97108R00",
+              "description": "INTAKE ACTUATOR, R&R"
+            }
+          ]
+        },
+        {
+          "serial": "KM25000109",
+          "date": "2025-06-10",
+          "odometer": 133731,
+          "dealer": {
+            "name": "ООО \"Мегапарк\"",
+            "code": "54005",
+            "city": "Новосибирск"
+          },
+          "fault_part": {
+            "part_number": "92700H0000",
+            "description": "LAMP ASSY-HIGH MOUNTED STOP"
+          },
+          "replaced_parts": [],
+          "operations": [
+            {
+              "code": "92750R00",
+              "description": "High Mounted Stop Lamp, R&R"
+            },
+            {
+              "code": "92750RZZ",
+              "description": ""
+            }
+          ]
+        }
+      ],
+      "total_records": 2,
+      "total_parts_replaced": 1,
+      "total_operations": 3
+    },
+    "isError": false
+  }
+}
+```
+
+### 3. maintenance_history
+
+**Пример полного ответа:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "result": {
+    "_meta": {
+      "vin": "Z94C241BBMR221738",
+      "data_source": "maintenance_api",
+      "execution_time_ms": 46,
+      "record_count": 1,
+      "api_endpoint": "http://213.171.24.57",
+      "timestamp": "2025-12-11T12:32:00Z"
+    },
+    "content": [
+      {
+        "type": "text",
+        "text": "История технического обслуживания VIN Z94C241BBMR221738\nВсего записей: 1\n\n1. S-08\n   Дата: 2024-07-10\n   Пробег: 120,073 км\n   Дилер: ООО \"Мегапарк\", код 54005 (Новосибирск)\n"
+      }
+    ],
+    "structuredContent": {
+      "vin": "Z94C241BBMR221738",
+      "records": [
+        {
+          "vin": "Z94C241BBMR221738",
+          "maintenance_type": "S-08",
+          "date": "2024-07-10",
+          "odometer": 120073,
+          "dealer": {
+            "name": "ООО \"Мегапарк\"",
+            "code": "54005",
+            "city": "Новосибирск"
+          }
+        }
+      ],
+      "total_records": 1,
+      "maintenance_types": [
+        "S-08"
+      ]
+    },
+    "isError": false
+  }
+}
+```
+
+### 4. vehicle_repairs_history
+
+**Пример полного ответа:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "result": {
+    "_meta": {
+      "vin": "Z94C241BBMR221738",
+      "data_source": "dnm_api",
+      "execution_time_ms": 35,
+      "record_count": 2,
+      "api_endpoint": "http://213.171.24.57",
+      "timestamp": "2025-12-11T12:32:24Z"
+    },
+    "content": [
+      {
+        "type": "text",
+        "text": "История ремонтов из дилерской сети для VIN Z94C241BBMR221738\nВсего визитов: 2\n\n═══ Визит 1 ═══\nДилер: ООО \"Мегапарк\"\nДата: 2025-06-27\nПробег: 3 км\nТип ремонта: ТО\nПричина визита: 1).ТО-9\nРекомендации: Рекомендовано провести антикоррозийную обработку кузова.\n\nОстаточная толщина передних тормозных колодок: 5мм.\nОстаточная толщина задних тормозных колодок: 8мм.\nОстаточная толщина передних дисков: 20мм.\nОстаточная толщина задних дисков: 9мм.\nОстаток высоты протектора шин (средний показатель): \nПередняя ось: 7мм.\nЗадняя ось:7мм.\nТемпература кристаллизации антифриза - Норма\nСостояние аккумуляторной батареи - Перезарядить\n\n═══ Визит 2 ═══\nДилер: ООО \"Мегапарк\"\nДата: 2025-06-10\nПробег: 3 км\nТип ремонта: текущий  ремонт\nПричина визита: замена щеток , долив ож\nРекомендации: Рекомендаций нет!\n"
+      }
+    ],
+    "structuredContent": {
+      "vin": "Z94C241BBMR221738",
+      "records": [
+        {
+          "dealer_name": "ООО \"Мегапарк\"",
+          "date": "2025-06-27",
+          "odometer": 3,
+          "repair_type": "ТО",
+          "visit_reason": "1).ТО-9",
+          "recommendations": "Рекомендовано провести антикоррозийную обработку кузова.\n\nОстаточная толщина передних тормозных колодок: 5мм.\nОстаточная толщина задних тормозных колодок: 8мм.\nОстаточная толщина передних дисков: 20мм.\nОстаточная толщина задних дисков: 9мм.\nОстаток высоты протектора шин (средний показатель): \nПередняя ось: 7мм.\nЗадняя ось:7мм.\nТемпература кристаллизации антифриза - Норма\nСостояние аккумуляторной батареи - Перезарядить"
+        },
+        {
+          "dealer_name": "ООО \"Мегапарк\"",
+          "date": "2025-06-10",
+          "odometer": 3,
+          "repair_type": "текущий  ремонт",
+          "visit_reason": "замена щеток , долив ож",
+          "recommendations": "Рекомендаций нет!"
+        }
+      ],
+      "total_records": 2,
+      "repair_types": [
+        "ТО",
+        "текущий  ремонт"
+      ]
+    },
+    "isError": false
+  }
+}
+```
+
+### 5. compliance_rag
+
+**Пример полного ответа:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 8,
+  "result": {
+    "_meta": {
+      "query": "Контакты клиентской службы ",
+      "knowledge_base_version": "c9751a9f-94a7-476d-95c5-2b171e26ab25",
+      "retrieval_limit": 10,
+      "execution_time_ms": 2387,
+      "api_endpoint": "https://7d801824-3b7c-4639-aa22-6c2c2a2c08f8.managed-rag.inference.cloud.ru/api/v2/retrieve",
+      "document_count": 10,
+      "timestamp": "2025-12-11T12:35:46Z"
+    },
+    "content": [
+      {
+        "type": "text",
+        "text": "Результаты поиска по запросу: \"Контакты клиентской службы \"\nНайдено документов: 10\n\n─── Документ 1 ───\nСодержание: Контакты Kia, необходимые в работе Клиентской Службе Дилерского \nцентра  \n \n  Клиентская служба Kia - https://kia.helpdeskeddy.com/; customercare@kia.ru \n  Отдел гарантии Kia - warranty@kia.ru \n  Техническая горячая линия Kia – hotline@kia.ru \n  Отдел качества Kia – quality@kia.ru \n  Отдел подд...\nМетаданные: filename: rag_data.pdf, filetype: text/pdf, page: 21, position: 0, size_in_tokens: 489, total_pages: 21\nРелевантность: 0.46\n\n─── Документ 2 ───\n..."
+      }
+    ],
+    "structuredContent": {
+      "query": "Контакты клиентской службы ",
+      "documents": [
+        {
+          "content": "Контакты Kia, необходимые в работе Клиентской Службе Дилерского \nцентра  \n \n  Клиентская служба Kia - https://kia.helpdeskeddy.com/; customercare@kia.ru \n  Отдел гарантии Kia - warranty@kia.ru \n  Техническая горячая линия Kia – hotline@kia.ru \n  Отдел качества Kia – quality@kia.ru \n  Отдел поддержки продаж запчастей Kia – parts@kia.ru \n  Юридический Департамент Kia – supportLegal@kia.ru \n \n \nДокументы обязательные для ознакомления сотрудников Клиентской \nСлужбы Дилерского центра",
+          "metadata": {
+            "filename": "rag_data.pdf",
+            "filetype": "text/pdf",
+            "page": 21,
+            "position": 0,
+            "size_in_tokens": 489,
+            "total_pages": 21
+          },
+          "relevance_score": 0.45569184
+        },
+        {
+          "content": "нажать на слово Показать и информация с описанием причины обращения клиента сделается видимой \nДополнительную информацию об обращении клиента и результаты диагностики, обязательно \nуточните у Дилерского Центра, в который обращался клиент с данным обращением.",
+          "metadata": {
+            "filename": "rag_data.pdf",
+            "filetype": "text/pdf",
+            "page": 10,
+            "position": 4,
+            "size_in_tokens": 258,
+            "total_pages": 21
+          },
+          "relevance_score": 0.47516993
+        }
+        // ... остальные документы
+      ],
+      "total_documents": 10,
+      "knowledge_base_version": "c9751a9f-94a7-476d-95c5-2b171e26ab25"
+    },
+    "isError": false
+  }
+}
+```
+
+### Структура метаданных (_meta)
+
+Все инструменты включают метаданные в поле `_meta`:
+
+**Для инструментов с VIN:**
+```json
+{
+  "_meta": {
+    "vin": "Z94C241BBMR221738",
+    "data_source": "warranty_api" | "maintenance_api" | "dnm_api",
+    "execution_time_ms": 202,
+    "record_count": 5,
+    "api_endpoint": "http://213.171.24.57",
+    "timestamp": "2025-12-11T12:30:00Z"
+  }
+}
+```
+
+**Для compliance_rag:**
+```json
+{
+  "_meta": {
+    "query": "Контакты клиентской службы ",
+    "knowledge_base_version": "c9751a9f-94a7-476d-95c5-2b171e26ab25",
+    "retrieval_limit": 10,
+    "execution_time_ms": 2387,
+    "api_endpoint": "https://...managed-rag.inference.cloud.ru/api/v2/retrieve",
+    "document_count": 10,
+    "timestamp": "2025-12-11T12:35:46Z"
+  }
+}
+```
+
+### Обработка ошибок
+
+При возникновении ошибки в ответе устанавливается флаг `isError: true`:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "_meta": {
+      "vin": "INVALID_VIN",
+      "data_source": "warranty_api",
+      "execution_time_ms": 50,
+      "record_count": 0,
+      "api_endpoint": "http://213.171.24.57",
+      "timestamp": "2025-12-11T12:30:00Z"
+    },
+    "content": [
+      {
+        "type": "text",
+        "text": "Ошибка: VIN номер не найден или неверный формат"
+      }
+    ],
+    "structuredContent": {
+      "vin": "INVALID_VIN",
+      "error": "VIN номер не найден или неверный формат"
+    },
+    "isError": true
+  }
+}
+```
+
+---
+
 ## Лицензия
 
-Проект разработан для внутреннего использования.
+См. корневой файл [LICENSE](../../LICENSE).
