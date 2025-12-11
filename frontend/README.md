@@ -225,3 +225,4 @@ custom_css = '''
 - **[Agent System README](../backend/agent/README.md)** - Документация по мультиагентной системе
 - **[MCP Server README](../backend/mcp_server/README.md)** - Документация по MCP серверу
 - **[Docker & Deployment Guide](../infra/DOCKER.md)** - Инструкции по развертыванию
+

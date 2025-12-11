@@ -1,4 +1,4 @@
-# MCP for Vehicle Warranty & Maintenance
+# AutoCompliance MCP
 
 Система для анализа гарантийных обращений и истории ремонтов автомобилей с использованием Model Context Protocol (MCP) и мультиагентной архитектуры на базе LangGraph.
 
@@ -21,7 +21,7 @@ MCP сервер предоставляет инструменты для пол
 
 **Документация:** [frontend/README.md](frontend/README.md)
 
-## Важные возможности
+## Возможности деплоя
 
 ### 🚀 Развертывание через Artifact Registry
 
@@ -56,11 +56,8 @@ uv sync
 cp infra/.env.example infra/.env
 ```
 
-**Важные переменные окружения для GigaChat:**
-- `GIGACHAT_USE_API=true` - Использовать Evolution Platform API (рекомендуется)
-- `GIGACHAT_API_KEY_EVOLUTION` - API ключ Evolution Platform
-- `EVOLUTION_PROJECT_ID` - ID проекта в Evolution Platform
-- Или используйте `GIGACHAT_USE_API=false` с `GIGACHAT_API_KEY` для langchain_gigachat
+**📋 Подробное описание всех переменных окружения:** [infra/SECRETS_DESCRIPTION.md](infra/SECRETS_DESCRIPTION.md)
+
 
 #### 3. Запуск MCP сервера
 
@@ -74,7 +71,8 @@ python -m mcp_server.server
 #### 4. Запуск системы агентов
 
 ```bash
-python -m backend.agent.main server
+cd backend
+python -m agent.main
 ```
 
 API будет доступен на `http://localhost:8005`
@@ -90,7 +88,6 @@ cd frontend
 
 ```bash
 cd frontend
-source ../backend/.venv/bin/activate
 python app.py
 ```
 
@@ -113,14 +110,25 @@ cd infra/scripts
 cp infra/.env.example infra/.env
 # Отредактируйте .env: включите MCP_AUTH_ENABLED и установите MCP_AUTH_TOKEN
 
-# 3. Запуск
-docker-compose up -d
+# 3. Настройка домена (для production)
+# Отредактируйте infra/nginx/conf.d/mcp-server.conf:
+# - Замените server_name _; на server_name your-domain.com;
+# - Для HTTPS: настройте SSL сертификаты (см. infra/DOCKER.md)
 
-# 4. Проверка
-curl -k https://localhost/health
+# 4. Запуск
+docker-compose --profile full up -d
+
+# 5. Проверка
+# Для development (localhost):
+curl http://localhost/health
+# Для production (замените на ваш домен):
+# curl https://your-domain.com/health
 ```
 
-Сервер будет доступен на `https://localhost`
+**Важно для production:**
+- Настройте `server_name` в nginx конфигурации на ваш домен
+- Используйте реальные SSL сертификаты (Let's Encrypt или корпоративные)
+- Настройте DNS записи для вашего домена
 
 **📚 Подробная документация:** [infra/DOCKER.md](infra/DOCKER.md)
 
@@ -156,6 +164,7 @@ curl -k https://localhost/health
 ## Документация
 
 - **[Docker & Deployment Guide](infra/DOCKER.md)** - Полная документация по контейнеризации, Docker Compose и production развертыванию
+- **[Описание переменных окружения](infra/SECRETS_DESCRIPTION.md)** - Подробное описание всех секретов и переменных конфигурации
 - **[MCP Server README](backend/mcp_server/README.md)** - Полная документация по MCP серверу, доступным инструментам и их использованию
 - **[Agent System README](backend/agent/README.md)** - Документация по мультиагентной системе, архитектуре и примерам использования
 - **[Frontend README](frontend/README.md)** - Документация по Gradio веб-интерфейсу, настройке и использованию
@@ -176,18 +185,42 @@ curl -k https://localhost/health
 - "Анализ частоты ремонтов у дилера"
 - "Покажи все гарантийные обращения"
 
-### API Endpoint
+**📚 Подробная документация по API:** [backend/agent/README.md](backend/agent/README.md)
 
-Frontend использует REST API агентной системы:
+## Примеры использования
 
-```bash
-POST http://localhost:8005/agent/query
-Content-Type: application/json
+### MCP сервер в Cloud.ru Evolution
 
-{
-  "query": "Ваш вопрос",
-  "vin": "Z94C251BBLR102931",  # опционально
-  "context": {}
-}
-```
+Интеграция MCP сервера с платформой Cloud.ru Evolution для создания AI-агентов:
 
+![MCP Cloud Integration](examples/mcp_cloud.png)
+
+Доступные инструменты MCP сервера:
+
+![MCP Tools](examples/mcp_tools_cloud.png)
+
+Пример ответа от MCP сервера:
+
+![MCP Response](examples/mcp_cloude_response.png)
+
+### Frontend интерфейс
+
+#### Анализ статистики дней в ремонте
+
+![Статистика ремонтов](examples/statistic.png)
+
+#### История ремонтов
+
+![История ремонтов](examples/repairs.png)
+
+#### Гарантийная политика и compliance
+
+![Compliance](examples/compliance.png)
+
+#### Полный отчет
+
+![Полный отчет](examples/all_report.png)
+
+## Лицензия
+
+См. корневой файл [LICENSE](../../LICENSE).

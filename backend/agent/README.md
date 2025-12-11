@@ -79,6 +79,26 @@ uvicorn backend.agent.api.app:app --host 0.0.0.0 --port 8005 --reload
 - Swagger UI: http://localhost:8005/docs
 - ReDoc: http://localhost:8005/redoc
 
+### API Endpoint
+
+Основной endpoint для взаимодействия с системой агентов:
+
+```bash
+POST http://localhost:8005/agent/query
+Content-Type: application/json
+
+{
+  "query": "Ваш вопрос",
+  "vin": "Z94C251BBLR102931",  # опционально
+  "context": {}
+}
+```
+
+**Параметры запроса:**
+- `query` (обязательный) - Текст запроса пользователя
+- `vin` (опциональный) - VIN номер автомобиля для анализа конкретного транспортного средства
+- `context` (опциональный) - Дополнительный контекст для запроса
+
 ## Примеры использования
 
 ### 1. Запрос с VIN (Анализ дней простоя)
